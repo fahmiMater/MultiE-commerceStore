@@ -77,7 +77,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         response.setHeader("Retry-After", String.valueOf(retryAfterSeconds));
         
         // إنشاء response موحد
-        ApiResponse<Map<String, Object>> errorResponse = ApiResponse.error(
+        ApiResponse<Map<String, Object>> errorResponse = ApiResponse.<Map<String, Object>>error(
             "Rate limit exceeded",
             Map.of(
                 "limit", AppConstants.RATE_LIMIT_REQUESTS,

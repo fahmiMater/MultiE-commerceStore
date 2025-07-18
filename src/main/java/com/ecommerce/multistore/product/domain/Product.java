@@ -7,8 +7,16 @@ import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
+// إزالة جميع الimports القديمة
+// import com.vladmihalcea.hibernate.type.array.ListArrayType;
+// import org.hibernate.annotations.Parameter;
+// import org.hibernate.annotations.TypeDef;
+// import org.hibernate.annotations.Type;
+
+// إزالة @TypeDef
 @Entity
 @Table(name = "products")
 public class Product {
@@ -89,8 +97,10 @@ public class Product {
     @Column(columnDefinition = "JSONB")
     private String attributes;
     
-    @Column(name = "tags", columnDefinition = "TEXT")
-    private String tags;
+    // ✅ الحل الجديد مع Hibernate 6
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(name = "tags", columnDefinition = "text[]")
+    private List<String> tags;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -117,45 +127,27 @@ public class Product {
     public Product() {}
     
     // Business Methods
-    
-    /**
-     * تحديث كمية المخزون
-     * Updates stock quantity
-     */
     public void updateStock(Integer newQuantity) {
         this.stockQuantity = newQuantity;
         this.updatedAt = LocalDateTime.now();
     }
     
-    /**
-     * التحقق من توفر المنتج
-     * Checks if product is available
-     */
     public Boolean isAvailable() {
         return this.isActive && this.stockQuantity > 0;
     }
     
-    /**
-     * التحقق من انخفاض المخزون
-     * Checks if stock is low
-     */
     public Boolean isLowStock() {
         return this.stockQuantity <= this.minStockLevel;
     }
     
-  
- /**
- * حساب نسبة الخصم
- * Calculates discount percentage
- */
-public BigDecimal getDiscountPercentage() {
-    if (this.comparePrice != null && this.comparePrice.compareTo(BigDecimal.ZERO) > 0) {
-        BigDecimal discount = this.comparePrice.subtract(this.price);
-        return discount.divide(this.comparePrice, 4, RoundingMode.HALF_UP)
-                .multiply(new BigDecimal("100"));
+    public BigDecimal getDiscountPercentage() {
+        if (this.comparePrice != null && this.comparePrice.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal discount = this.comparePrice.subtract(this.price);
+            return discount.divide(this.comparePrice, 4, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("100"));
+        }
+        return BigDecimal.ZERO;
     }
-    return BigDecimal.ZERO;
-}
     
     // Getters and Setters
     public UUID getId() { return id; }
@@ -233,12 +225,26 @@ public BigDecimal getDiscountPercentage() {
     public String getAttributes() { return attributes; }
     public void setAttributes(String attributes) { this.attributes = attributes; }
     
-    public String getTags() { return tags; }
-    public void setTags(String tags) { this.tags = tags; }
+    public List<String> getTags() { return tags; }
+    public void setTags(List<String> tags) { this.tags = tags; }
     
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    
+    @Override
+    public String toString() {
+        return "Product{" +
+                "id=" + id +
+                ", displayId='" + displayId + '\'' +
+                ", name='" + name + '\'' +
+                ", nameAr='" + nameAr + '\'' +
+                ", slug='" + slug + '\'' +
+                ", sku='" + sku + '\'' +
+                ", price=" + price +
+                ", isActive=" + isActive +
+                '}';
+    }
 }

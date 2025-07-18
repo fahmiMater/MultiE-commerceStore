@@ -48,7 +48,7 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
     response.setCharacterEncoding("UTF-8");
     
     // استخدام ApiResponse للتنسيق الموحد
-    ApiResponse<Void> errorResponse = ApiResponse.unauthorized("Invalid API Key");
+   ApiResponse<Void> errorResponse = ApiResponse.<Void>unauthorized("Invalid API Key");
     errorResponse.setMessageAr("مفتاح API غير صحيح");
     
     // تحويل إلى JSON

@@ -1,6 +1,3 @@
-
-/* ---- File: src/main/java/com/ecommerce/multistore/category/infrastructure/CategoryRepository.java ---- */
-
 package com.ecommerce.multistore.category.infrastructure;
 
 import com.ecommerce.multistore.category.domain.Category;
@@ -56,8 +53,11 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
      * الحصول على الفئات الفرعية
      */
     List<Category> findByParentIdAndIsActiveTrueOrderBySortOrderAsc(UUID parentId);
-// في CategoryRepository.java
-boolean existsByParentIdAndIsActive(UUID parentId, boolean isActive);
+
+    /**
+     * التحقق من وجود فئات فرعية
+     */
+    boolean existsByParentIdAndIsActive(UUID parentId, boolean isActive);
 
     /**
      * الحصول على الفئات النشطة
@@ -80,9 +80,9 @@ boolean existsByParentIdAndIsActive(UUID parentId, boolean isActive);
     Page<Category> searchCategories(@Param("query") String query, Pageable pageable);
 
     /**
-     * عدد المنتجات لكل فئة
+     * عدد المنتجات لكل فئة - تم الإصلاح
      */
-    @Query("SELECT c.id, COUNT(p.id) FROM Category c LEFT JOIN Product p ON c.id = p.category.id GROUP BY c.id")
+    @Query("SELECT c.id, COUNT(p.id) FROM Category c LEFT JOIN Product p ON c.id = p.categoryId GROUP BY c.id")
     List<Object[]> countProductsByCategory();
 
     /**

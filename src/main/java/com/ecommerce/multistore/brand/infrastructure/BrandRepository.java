@@ -1,7 +1,3 @@
-
-
-/* ---- File: src/main/java/com/ecommerce/multistore/brand/infrastructure/BrandRepository.java ---- */
-
 package com.ecommerce.multistore.brand.infrastructure;
 
 import com.ecommerce.multistore.brand.domain.Brand;
@@ -74,8 +70,8 @@ public interface BrandRepository extends JpaRepository<Brand, UUID> {
     List<Brand> findAllByOrderBySortOrderAsc();
 
     /**
-     * عدد المنتجات لكل علامة تجارية
+     * عدد المنتجات لكل علامة تجارية - تم الإصلاح
      */
-    @Query("SELECT b.id, COUNT(p.id) FROM Brand b LEFT JOIN Product p ON b.id = p.brand.id GROUP BY b.id")
+    @Query("SELECT b.id, COUNT(p.id) FROM Brand b LEFT JOIN Product p ON b.id = p.brandId GROUP BY b.id")
     List<Object[]> countProductsByBrand();
 }

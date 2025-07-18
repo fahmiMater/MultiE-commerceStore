@@ -2,6 +2,7 @@ package com.ecommerce.multistore.product.application.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -39,7 +40,7 @@ public class ProductResponse {
     private Boolean isDigital;
     private Boolean requiresShipping;
     private String attributes;
-    private String tags;
+    private List<String> tags;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
@@ -133,8 +134,8 @@ public class ProductResponse {
     public String getAttributes() { return attributes; }
     public void setAttributes(String attributes) { this.attributes = attributes; }
     
-    public String getTags() { return tags; }
-    public void setTags(String tags) { this.tags = tags; }
+    public List<String> getTags() { return tags; }
+    public void setTags(List<String> tags) { this.tags = tags; }
     
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

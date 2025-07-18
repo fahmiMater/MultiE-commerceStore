@@ -22,10 +22,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * تحكم الفئات
- * Category Controller
- */
 @RestController
 @RequestMapping(AppConstants.API_BASE_PATH + "/categories")
 @Tag(name = "Categories", description = "إدارة الفئات - Category Management")
@@ -38,17 +34,13 @@ public class CategoryController {
         this.categoryService = categoryService;
     }
 
-    /**
-     * إنشاء فئة جديدة
-     * Create new category
-     */
     @PostMapping
     @Operation(summary = "Create Category", description = "إنشاء فئة جديدة")
     public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(
             @Valid @RequestBody CreateCategoryRequest request) {
 
         CategoryResponse category = categoryService.createCategory(request);
-        ApiResponse<CategoryResponse> response = ApiResponse.success(
+        ApiResponse<CategoryResponse> response = ApiResponse.<CategoryResponse>success(
             category,
             "Category created successfully",
             201
@@ -58,10 +50,6 @@ public class CategoryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    /**
-     * الحصول على فئة بواسطة ID
-     * Get category by ID
-     */
     @GetMapping("/{id}")
     @Operation(summary = "Get Category by ID", description = "الحصول على فئة بواسطة المعرف")
     public ResponseEntity<ApiResponse<CategoryResponse>> getCategoryById(
@@ -69,7 +57,7 @@ public class CategoryController {
 
         return categoryService.findById(id)
                 .map(category -> {
-                    ApiResponse<CategoryResponse> response = ApiResponse.success(
+                    ApiResponse<CategoryResponse> response = ApiResponse.<CategoryResponse>success(
                         category,
                         "Category retrieved successfully"
                     );
@@ -79,10 +67,6 @@ public class CategoryController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * الحصول على فئة بواسطة Slug
-     * Get category by slug
-     */
     @GetMapping("/slug/{slug}")
     @Operation(summary = "Get Category by Slug", description = "الحصول على فئة بواسطة الرابط الودي")
     public ResponseEntity<ApiResponse<CategoryResponse>> getCategoryBySlug(
@@ -90,7 +74,7 @@ public class CategoryController {
 
         return categoryService.findBySlug(slug)
                 .map(category -> {
-                    ApiResponse<CategoryResponse> response = ApiResponse.success(
+                    ApiResponse<CategoryResponse> response = ApiResponse.<CategoryResponse>success(
                         category,
                         "Category retrieved successfully"
                     );
@@ -100,10 +84,6 @@ public class CategoryController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * الحصول على جميع الفئات
-     * Get all categories
-     */
     @GetMapping
     @Operation(summary = "Get All Categories", description = "الحصول على جميع الفئات")
     public ResponseEntity<ApiResponse<PaginatedResponse<CategoryResponse>>> getAllCategories(
@@ -115,10 +95,9 @@ public class CategoryController {
         Pageable pageable = PaginationUtils.createPageable(page, size, sortBy, sortDir);
         Page<CategoryResponse> categories = categoryService.getAllCategories(pageable);
 
-        // استخدام static factory method
         PaginatedResponse<CategoryResponse> paginatedResponse = PaginatedResponse.from(categories);
 
-        ApiResponse<PaginatedResponse<CategoryResponse>> response = ApiResponse.success(
+        ApiResponse<PaginatedResponse<CategoryResponse>> response = ApiResponse.<PaginatedResponse<CategoryResponse>>success(
             paginatedResponse,
             "Categories retrieved successfully"
         );
@@ -127,16 +106,12 @@ public class CategoryController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * الحصول على الفئات الرئيسية
-     * Get parent categories
-     */
     @GetMapping("/parents")
     @Operation(summary = "Get Parent Categories", description = "الحصول على الفئات الرئيسية")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getParentCategories() {
 
         List<CategoryResponse> categories = categoryService.getParentCategories();
-        ApiResponse<List<CategoryResponse>> response = ApiResponse.success(
+        ApiResponse<List<CategoryResponse>> response = ApiResponse.<List<CategoryResponse>>success(
             categories,
             "Parent categories retrieved successfully"
         );
@@ -145,17 +120,13 @@ public class CategoryController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * الحصول على الفئات الفرعية
-     * Get child categories
-     */
     @GetMapping("/{parentId}/children")
     @Operation(summary = "Get Child Categories", description = "الحصول على الفئات الفرعية")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getChildCategories(
             @Parameter(description = "Parent Category ID") @PathVariable UUID parentId) {
 
         List<CategoryResponse> categories = categoryService.getChildCategories(parentId);
-        ApiResponse<List<CategoryResponse>> response = ApiResponse.success(
+        ApiResponse<List<CategoryResponse>> response = ApiResponse.<List<CategoryResponse>>success(
             categories,
             "Child categories retrieved successfully"
         );
@@ -164,16 +135,12 @@ public class CategoryController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * الحصول على شجرة الفئات
-     * Get category tree
-     */
     @GetMapping("/tree")
     @Operation(summary = "Get Category Tree", description = "الحصول على شجرة الفئات")
     public ResponseEntity<ApiResponse<CategoryTreeResponse>> getCategoryTree() {
 
         CategoryTreeResponse tree = categoryService.getCategoryTree();
-        ApiResponse<CategoryTreeResponse> response = ApiResponse.success(
+        ApiResponse<CategoryTreeResponse> response = ApiResponse.<CategoryTreeResponse>success(
             tree,
             "Category tree retrieved successfully"
         );
@@ -182,10 +149,6 @@ public class CategoryController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * البحث في الفئات
-     * Search categories
-     */
     @GetMapping("/search")
     @Operation(summary = "Search Categories", description = "البحث في الفئات")
     public ResponseEntity<ApiResponse<PaginatedResponse<CategoryResponse>>> searchCategories(
@@ -198,10 +161,9 @@ public class CategoryController {
         Pageable pageable = PaginationUtils.createPageable(page, size, sortBy, sortDir);
         Page<CategoryResponse> categories = categoryService.searchCategories(query, pageable);
 
-        // استخدام static factory method
         PaginatedResponse<CategoryResponse> paginatedResponse = PaginatedResponse.from(categories);
 
-        ApiResponse<PaginatedResponse<CategoryResponse>> response = ApiResponse.success(
+        ApiResponse<PaginatedResponse<CategoryResponse>> response = ApiResponse.<PaginatedResponse<CategoryResponse>>success(
             paginatedResponse,
             "Categories search completed successfully"
         );
@@ -210,10 +172,6 @@ public class CategoryController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * تحديث فئة
-     * Update category
-     */
     @PutMapping("/{id}")
     @Operation(summary = "Update Category", description = "تحديث فئة")
     public ResponseEntity<ApiResponse<CategoryResponse>> updateCategory(
@@ -221,7 +179,7 @@ public class CategoryController {
             @Valid @RequestBody CreateCategoryRequest request) {
 
         CategoryResponse category = categoryService.updateCategory(id, request);
-        ApiResponse<CategoryResponse> response = ApiResponse.success(
+        ApiResponse<CategoryResponse> response = ApiResponse.<CategoryResponse>success(
             category,
             "Category updated successfully"
         );
@@ -230,17 +188,13 @@ public class CategoryController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * تفعيل فئة
-     * Activate category
-     */
     @PatchMapping("/{id}/activate")
     @Operation(summary = "Activate Category", description = "تفعيل فئة")
     public ResponseEntity<ApiResponse<CategoryResponse>> activateCategory(
             @Parameter(description = "Category ID") @PathVariable UUID id) {
 
         CategoryResponse category = categoryService.activateCategory(id);
-        ApiResponse<CategoryResponse> response = ApiResponse.success(
+        ApiResponse<CategoryResponse> response = ApiResponse.<CategoryResponse>success(
             category,
             "Category activated successfully"
         );
@@ -249,17 +203,13 @@ public class CategoryController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * إلغاء تفعيل فئة
-     * Deactivate category
-     */
     @PatchMapping("/{id}/deactivate")
     @Operation(summary = "Deactivate Category", description = "إلغاء تفعيل فئة")
     public ResponseEntity<ApiResponse<CategoryResponse>> deactivateCategory(
             @Parameter(description = "Category ID") @PathVariable UUID id) {
 
         CategoryResponse category = categoryService.deactivateCategory(id);
-        ApiResponse<CategoryResponse> response = ApiResponse.success(
+        ApiResponse<CategoryResponse> response = ApiResponse.<CategoryResponse>success(
             category,
             "Category deactivated successfully"
         );
@@ -268,17 +218,13 @@ public class CategoryController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * حذف فئة
-     * Delete category
-     */
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete Category", description = "حذف فئة")
     public ResponseEntity<ApiResponse<Void>> deleteCategory(
             @Parameter(description = "Category ID") @PathVariable UUID id) {
 
         categoryService.deleteCategory(id);
-        ApiResponse<Void> response = ApiResponse.success(
+        ApiResponse<Void> response = ApiResponse.<Void>success(
             null,
             "Category deleted successfully"
         );

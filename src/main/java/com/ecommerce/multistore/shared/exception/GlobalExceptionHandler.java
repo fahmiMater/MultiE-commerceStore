@@ -65,7 +65,7 @@ public class GlobalExceptionHandler {
         logger.warn("Business exception occurred: {} | Request: {} {}", 
                    ex.getMessage(), request.getMethod(), request.getRequestURI());
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message(ex.getMessage())
                 .messageAr(ex.getMessageAr())
@@ -92,7 +92,7 @@ public class GlobalExceptionHandler {
         logger.warn("Resource not found: {} | Request: {} {}", 
                    ex.getMessage(), request.getMethod(), request.getRequestURI());
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message(ex.getMessage())
                 .messageAr(ex.getMessageAr())
@@ -119,7 +119,7 @@ public class GlobalExceptionHandler {
         logger.warn("Duplicate resource: {} | Request: {} {}", 
                    ex.getMessage(), request.getMethod(), request.getRequestURI());
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message(ex.getMessage())
                 .messageAr(ex.getMessageAr())
@@ -168,7 +168,7 @@ public class GlobalExceptionHandler {
                 .totalErrors(validationErrors.size())
                 .build();
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message("Validation failed")
                 .messageAr("فشل في التحقق من صحة البيانات")
@@ -204,7 +204,7 @@ public class GlobalExceptionHandler {
             constraintErrors.put(fieldName, errorMessage);
         }
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message("Constraint validation failed")
                 .messageAr("فشل في التحقق من القيود")
@@ -236,7 +236,7 @@ public class GlobalExceptionHandler {
         logger.warn("Authentication failed: {} | Request: {} {}", 
                    ex.getMessage(), request.getMethod(), request.getRequestURI());
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message("Authentication failed")
                 .messageAr("فشل في المصادقة")
@@ -263,7 +263,7 @@ public class GlobalExceptionHandler {
         logger.warn("Access denied: {} | Request: {} {}", 
                    ex.getMessage(), request.getMethod(), request.getRequestURI());
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message("Access denied")
                 .messageAr("تم رفض الوصول")
@@ -290,7 +290,7 @@ public class GlobalExceptionHandler {
         logger.warn("Bad credentials: {} | Request: {} {}", 
                    ex.getMessage(), request.getMethod(), request.getRequestURI());
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message("Invalid credentials")
                 .messageAr("بيانات اعتماد غير صحيحة")
@@ -333,7 +333,7 @@ public class GlobalExceptionHandler {
             userMessageAr = "لا يمكن حذف هذا السجل لأنه مرتبط بسجلات أخرى";
         }
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message(userMessage)
                 .messageAr(userMessageAr)
@@ -364,7 +364,7 @@ public class GlobalExceptionHandler {
         logger.warn("Method not supported: {} | Request: {} {}", 
                    ex.getMessage(), request.getMethod(), request.getRequestURI());
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message("HTTP method not supported: " + ex.getMethod())
                 .messageAr("طريقة HTTP غير مدعومة: " + ex.getMethod())
@@ -394,7 +394,7 @@ public class GlobalExceptionHandler {
         logger.warn("Media type not supported: {} | Request: {} {}", 
                    ex.getMessage(), request.getMethod(), request.getRequestURI());
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message("Media type not supported")
                 .messageAr("نوع المحتوى غير مدعوم")
@@ -424,7 +424,7 @@ public class GlobalExceptionHandler {
         logger.warn("No handler found: {} | Request: {} {}", 
                    ex.getMessage(), request.getMethod(), request.getRequestURI());
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message("Endpoint not found: " + ex.getRequestURL())
                 .messageAr("نقطة النهاية غير موجودة: " + ex.getRequestURL())
@@ -451,7 +451,7 @@ public class GlobalExceptionHandler {
         logger.warn("Missing parameter: {} | Request: {} {}", 
                    ex.getMessage(), request.getMethod(), request.getRequestURI());
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message("Missing required parameter: " + ex.getParameterName())
                 .messageAr("معامل مطلوب مفقود: " + ex.getParameterName())
@@ -481,7 +481,7 @@ public class GlobalExceptionHandler {
         logger.warn("Type mismatch: {} | Request: {} {}", 
                    ex.getMessage(), request.getMethod(), request.getRequestURI());
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message("Invalid parameter type for: " + ex.getName())
                 .messageAr("نوع معامل غير صحيح لـ: " + ex.getName())
@@ -512,7 +512,7 @@ public class GlobalExceptionHandler {
         logger.warn("Message not readable: {} | Request: {} {}", 
                    ex.getMessage(), request.getMethod(), request.getRequestURI());
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message("Invalid request body format")
                 .messageAr("تنسيق نص الطلب غير صحيح")
@@ -543,7 +543,7 @@ public class GlobalExceptionHandler {
         logger.warn("Illegal argument: {} | Request: {} {}", 
                    ex.getMessage(), request.getMethod(), request.getRequestURI());
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message(ex.getMessage())
                 .messageAr("معامل غير صحيح")
@@ -570,7 +570,7 @@ public class GlobalExceptionHandler {
         logger.error("Unexpected error occurred: {} | Request: {} {}", 
                     ex.getMessage(), request.getMethod(), request.getRequestURI(), ex);
         
-        ApiResponse<Object> response = ApiResponse.builder()
+        ApiResponse<Object> response = ApiResponse.<Object>builder()
                 .success(false)
                 .message("An unexpected error occurred")
                 .messageAr("حدث خطأ غير متوقع")

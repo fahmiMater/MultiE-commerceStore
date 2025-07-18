@@ -1,64 +1,96 @@
+# Application Configuration
 spring:
   application:
     name: multi-store-backend
-
+  
+  # Database Configuration
   datasource:
     url: jdbc:postgresql://aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres
     username: postgres.wkwcbdfllvkhotyjkose
-    password: ${DB_PASSWORD:MAES@#2025#}
+    password: MAES@#2025#
     driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      connection-timeout: 30000
   
+  # JPA Configuration
   jpa:
     hibernate:
-      ddl-auto: none
-    show-sql: false
+      ddl-auto: validate
+    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-        jdbc:
-          batch_size: 25
-        order_inserts: true
-        order_updates: true
-
-  # إعدادات Jackson - الحل الأسهل
+  
+  # Jackson Configuration
   jackson:
     serialization:
       write-dates-as-timestamps: false
-      write-date-timestamps-as-nanoseconds: false
     deserialization:
-      read-date-timestamps-as-nanoseconds: false
+      fail-on-unknown-properties: false
     default-property-inclusion: non-null
-    date-format: yyyy-MM-dd HH:mm:ss
-    time-zone: GMT+3
+  
+  # Security Configuration
+  security:
+    user:
+      name: admin
+      password: admin123
+      roles: ADMIN
 
+# Server Configuration
 server:
-  port: ${SERVER_PORT:8080}
+  port: 8080
+  servlet:
+    context-path: /
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
-# إعدادات Swagger/OpenAPI
+# Swagger/OpenAPI Configuration
 springdoc:
   api-docs:
+    enabled: true
     path: /api-docs
-    enabled: true
   swagger-ui:
-    path: /swagger-ui.html
     enabled: true
-    operationsSorter: method
-    tagsSorter: alpha
-    tryItOutEnabled: true
-    filter: true
-    displayRequestDuration: true
-  show-actuator: true
-  group-configs:
-    - group: users
-      paths-to-match: /api/v1/users/**
-      display-name: User Management APIs
+    path: /swagger-ui.html
+    try-it-out-enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    doc-expansion: none
+    default-models-expand-depth: 1
+    default-model-expand-depth: 1
 
+# Logging Configuration
 logging:
   level:
-    com.ecommerce.multistore: INFO
-    org.springframework.security: INFO
+    com.ecommerce.multistore: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# Management/Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Rate Limiting Configuration
+rate-limit:
+  enabled: true
+  requests: 100
+  window-minutes: 1
+  cleanup-interval: 300
+
+# Cache Configuration
+spring.cache:
+  type: simple
+  cache-names: users,brands,categories,products,orders

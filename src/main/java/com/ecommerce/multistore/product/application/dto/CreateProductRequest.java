@@ -2,6 +2,7 @@ package com.ecommerce.multistore.product.application.dto;
 
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -171,7 +172,7 @@ public class CreateProductRequest {
      * العلامات
      * Tags
      */
-    private String tags;
+    private List<String> tags;
     
     // ===============================
     // Constructors
@@ -252,6 +253,6 @@ public class CreateProductRequest {
     public String getAttributes() { return attributes; }
     public void setAttributes(String attributes) { this.attributes = attributes; }
     
-    public String getTags() { return tags; }
-    public void setTags(String tags) { this.tags = tags; }
+    public List<String> getTags() { return tags; }
+    public void setTags(List<String> tags) { this.tags = tags; }
 }

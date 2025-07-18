@@ -51,30 +51,404 @@ public class AnalyticsController {
 
 /* ---- File: src/main/java/com/ecommerce/multistore/brand/application/dto/BrandResponse.java ---- */
 
+
+/* ---- File: src/main/java/com/ecommerce/multistore/brand/application/dto/BrandResponse.java ---- */
+
 package com.ecommerce.multistore.brand.application.dto;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+/**
+ * استجابة العلامة التجارية
+ * Brand Response DTO
+ */
 public class BrandResponse {
-    
+
+    private UUID id;
+    private String displayId;
+    private String name;
+    private String nameAr;
+    private String slug;
+    private String description;
+    private String descriptionAr;
+    private String logoUrl;
+    private String websiteUrl;
+    private Boolean isActive;
+    private Integer sortOrder;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private Long productCount;
+
+    // Constructors
+    public BrandResponse() {}
+
+    // Getters and Setters
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+
+    public String getDisplayId() { return displayId; }
+    public void setDisplayId(String displayId) { this.displayId = displayId; }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public String getNameAr() { return nameAr; }
+    public void setNameAr(String nameAr) { this.nameAr = nameAr; }
+
+    public String getSlug() { return slug; }
+    public void setSlug(String slug) { this.slug = slug; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public String getDescriptionAr() { return descriptionAr; }
+    public void setDescriptionAr(String descriptionAr) { this.descriptionAr = descriptionAr; }
+
+    public String getLogoUrl() { return logoUrl; }
+    public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
+
+    public String getWebsiteUrl() { return websiteUrl; }
+    public void setWebsiteUrl(String websiteUrl) { this.websiteUrl = websiteUrl; }
+
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+
+    public Integer getSortOrder() { return sortOrder; }
+    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public Long getProductCount() { return productCount; }
+    public void setProductCount(Long productCount) { this.productCount = productCount; }
 }
 
 
 
 /* ---- File: src/main/java/com/ecommerce/multistore/brand/application/dto/CreateBrandRequest.java ---- */
 
+
+/* ---- File: src/main/java/com/ecommerce/multistore/brand/application/dto/CreateBrandRequest.java ---- */
+
 package com.ecommerce.multistore.brand.application.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
+
+/**
+ * طلب إنشاء علامة تجارية
+ * Create Brand Request DTO
+ */
 public class CreateBrandRequest {
-    
+
+    @NotBlank(message = "Brand name is required")
+    @Size(max = 255, message = "Brand name cannot exceed 255 characters")
+    private String name;
+
+    @Size(max = 255, message = "Arabic name cannot exceed 255 characters")
+    private String nameAr;
+
+    @Size(max = 5000, message = "Description cannot exceed 5000 characters")
+    private String description;
+
+    @Size(max = 5000, message = "Arabic description cannot exceed 5000 characters")
+    private String descriptionAr;
+
+    private String logoUrl;
+    private String websiteUrl;
+
+    @Min(value = 0, message = "Sort order cannot be negative")
+    @Max(value = 9999, message = "Sort order cannot exceed 9999")
+    private Integer sortOrder = 0;
+
+    private Boolean isActive = true;
+
+    // Constructors
+    public CreateBrandRequest() {}
+
+    public CreateBrandRequest(String name) {
+        this.name = name;
+    }
+
+    // Getters and Setters
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public String getNameAr() { return nameAr; }
+    public void setNameAr(String nameAr) { this.nameAr = nameAr; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public String getDescriptionAr() { return descriptionAr; }
+    public void setDescriptionAr(String descriptionAr) { this.descriptionAr = descriptionAr; }
+
+    public String getLogoUrl() { return logoUrl; }
+    public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
+
+    public String getWebsiteUrl() { return websiteUrl; }
+    public void setWebsiteUrl(String websiteUrl) { this.websiteUrl = websiteUrl; }
+
+    public Integer getSortOrder() { return sortOrder; }
+    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
 }
 
 
 
 /* ---- File: src/main/java/com/ecommerce/multistore/brand/application/service/BrandService.java ---- */
 
+
+/* ---- File: src/main/java/com/ecommerce/multistore/brand/application/service/BrandService.java ---- */
+
 package com.ecommerce.multistore.brand.application.service;
 
+import com.ecommerce.multistore.brand.application.dto.BrandResponse;
+import com.ecommerce.multistore.brand.application.dto.CreateBrandRequest;
+import com.ecommerce.multistore.brand.domain.Brand;
+import com.ecommerce.multistore.brand.infrastructure.BrandRepository;
+import com.ecommerce.multistore.shared.exception.DuplicateResourceException;
+import com.ecommerce.multistore.shared.exception.ResourceNotFoundException;
+import com.ecommerce.multistore.shared.utils.SlugGenerator;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+/**
+ * خدمة إدارة العلامات التجارية
+ * Brand Management Service
+ */
+@Service
+@Transactional
 public class BrandService {
-    
+
+    private final BrandRepository brandRepository;
+
+    @Autowired
+    public BrandService(BrandRepository brandRepository) {
+        this.brandRepository = brandRepository;
+    }
+
+    /**
+     * إنشاء علامة تجارية جديدة
+     * Create new brand
+     */
+    @CacheEvict(value = "brands", allEntries = true)
+    public BrandResponse createBrand(CreateBrandRequest request) {
+        // التحقق من عدم وجود اسم مكرر
+        if (brandRepository.existsByName(request.getName())) {
+            throw new DuplicateResourceException("Brand with name '" + request.getName() + "' already exists");
+        }
+
+        // توليد slug فريد
+        String slug = SlugGenerator.generateUniqueSlug(
+            request.getName(), 
+            brandRepository::existsBySlug
+        );
+
+        // إنشاء العلامة التجارية
+        Brand brand = new Brand();
+        brand.setName(request.getName());
+        brand.setNameAr(request.getNameAr());
+        brand.setSlug(slug);
+        brand.setDescription(request.getDescription());
+        brand.setDescriptionAr(request.getDescriptionAr());
+        brand.setLogoUrl(request.getLogoUrl());
+        brand.setWebsiteUrl(request.getWebsiteUrl());
+        brand.setSortOrder(request.getSortOrder());
+        brand.setIsActive(request.getIsActive());
+
+        Brand savedBrand = brandRepository.save(brand);
+        return convertToResponse(savedBrand);
+    }
+
+    /**
+     * الحصول على علامة تجارية بواسطة ID
+     * Get brand by ID
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = "brands", key = "#id")
+    public Optional<BrandResponse> findById(UUID id) {
+        return brandRepository.findById(id)
+                .map(this::convertToResponse);
+    }
+
+    /**
+     * الحصول على علامة تجارية بواسطة Display ID
+     * Get brand by display ID
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = "brands", key = "#displayId")
+    public Optional<BrandResponse> findByDisplayId(String displayId) {
+        return brandRepository.findByDisplayId(displayId)
+                .map(this::convertToResponse);
+    }
+
+    /**
+     * الحصول على علامة تجارية بواسطة Slug
+     * Get brand by slug
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = "brands", key = "#slug")
+    public Optional<BrandResponse> findBySlug(String slug) {
+        return brandRepository.findBySlug(slug)
+                .map(this::convertToResponse);
+    }
+
+    /**
+     * الحصول على جميع العلامات التجارية
+     * Get all brands
+     */
+    @Transactional(readOnly = true)
+    public Page<BrandResponse> getAllBrands(Pageable pageable) {
+        return brandRepository.findAll(pageable)
+                .map(this::convertToResponse);
+    }
+
+    /**
+     * الحصول على العلامات التجارية النشطة
+     * Get active brands
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = "brands", key = "'active'")
+    public List<BrandResponse> getActiveBrands() {
+        return brandRepository.findByIsActiveTrueOrderBySortOrderAsc()
+                .stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * البحث في العلامات التجارية
+     * Search brands
+     */
+    @Transactional(readOnly = true)
+    public Page<BrandResponse> searchBrands(String query, Pageable pageable) {
+        return brandRepository.searchBrands(query, pageable)
+                .map(this::convertToResponse);
+    }
+
+    /**
+     * تحديث علامة تجارية
+     * Update brand
+     */
+    @CacheEvict(value = "brands", allEntries = true)
+    public BrandResponse updateBrand(UUID id, CreateBrandRequest request) {
+        Brand brand = brandRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Brand not found with ID: " + id));
+
+        // التحقق من عدم وجود اسم مكرر (باستثناء العلامة الحالية)
+        if (!brand.getName().equals(request.getName()) && 
+            brandRepository.existsByName(request.getName())) {
+            throw new DuplicateResourceException("Brand with name '" + request.getName() + "' already exists");
+        }
+
+        // تحديث slug إذا تغير الاسم
+        if (!brand.getName().equals(request.getName())) {
+            String newSlug = SlugGenerator.generateUniqueSlug(
+                request.getName(), 
+                slug -> !slug.equals(brand.getSlug()) && brandRepository.existsBySlug(slug)
+            );
+            brand.setSlug(newSlug);
+        }
+
+        // تحديث البيانات
+        brand.updateInfo(
+            request.getName(),
+            request.getNameAr(),
+            request.getDescription(),
+            request.getDescriptionAr()
+        );
+        brand.setLogoUrl(request.getLogoUrl());
+        brand.setWebsiteUrl(request.getWebsiteUrl());
+        brand.setSortOrder(request.getSortOrder());
+        brand.setIsActive(request.getIsActive());
+
+        Brand updatedBrand = brandRepository.save(brand);
+        return convertToResponse(updatedBrand);
+    }
+
+    /**
+     * تفعيل علامة تجارية
+     * Activate brand
+     */
+    @CacheEvict(value = "brands", allEntries = true)
+    public BrandResponse activateBrand(UUID id) {
+        Brand brand = brandRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Brand not found with ID: " + id));
+
+        brand.activate();
+        Brand updatedBrand = brandRepository.save(brand);
+        return convertToResponse(updatedBrand);
+    }
+
+    /**
+     * إلغاء تفعيل علامة تجارية
+     * Deactivate brand
+     */
+    @CacheEvict(value = "brands", allEntries = true)
+    public BrandResponse deactivateBrand(UUID id) {
+        Brand brand = brandRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Brand not found with ID: " + id));
+
+        brand.deactivate();
+        Brand updatedBrand = brandRepository.save(brand);
+        return convertToResponse(updatedBrand);
+    }
+
+    /**
+     * حذف علامة تجارية
+     * Delete brand
+     */
+    @CacheEvict(value = "brands", allEntries = true)
+    public void deleteBrand(UUID id) {
+        Brand brand = brandRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Brand not found with ID: " + id));
+
+        brandRepository.delete(brand);
+    }
+
+    // Helper Methods
+
+    /**
+     * تحويل Entity إلى Response DTO
+     * Convert entity to response DTO
+     */
+    private BrandResponse convertToResponse(Brand brand) {
+        BrandResponse response = new BrandResponse();
+        response.setId(brand.getId());
+        response.setDisplayId(brand.getDisplayId());
+        response.setName(brand.getName());
+        response.setNameAr(brand.getNameAr());
+        response.setSlug(brand.getSlug());
+        response.setDescription(brand.getDescription());
+        response.setDescriptionAr(brand.getDescriptionAr());
+        response.setLogoUrl(brand.getLogoUrl());
+        response.setWebsiteUrl(brand.getWebsiteUrl());
+        response.setIsActive(brand.getIsActive());
+        response.setSortOrder(brand.getSortOrder());
+        response.setCreatedAt(brand.getCreatedAt());
+        response.setUpdatedAt(brand.getUpdatedAt());
+        return response;
+    }
 }
 
 
@@ -83,9 +457,152 @@ public class BrandService {
 
 package com.ecommerce.multistore.brand.domain;
 
+import jakarta.persistence.*;
+import org.hibernate.annotations.GenericGenerator;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+/**
+ * كيان العلامة التجارية
+ * Brand Entity
+ */
+@Entity
+@Table(name = "brands")
 public class Brand {
     
+    @Id
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    private UUID id;
+    
+    @Column(name = "display_id", unique = true)
+    private String displayId;
+    
+    @Column(nullable = false)
+    private String name;
+    
+    @Column(name = "name_ar")
+    private String nameAr;
+    
+    @Column(unique = true, nullable = false)
+    private String slug;
+    
+    @Column(columnDefinition = "TEXT")
+    private String description;
+    
+    @Column(name = "description_ar", columnDefinition = "TEXT")
+    private String descriptionAr;
+    
+    @Column(name = "logo_url")
+    private String logoUrl;
+    
+    @Column(name = "website_url")
+    private String websiteUrl;
+    
+    @Column(name = "is_active")
+    private Boolean isActive = true;
+    
+    @Column(name = "sort_order")
+    private Integer sortOrder = 0;
+    
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+    
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
+    // Constructors
+    public Brand() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    public Brand(String name, String nameAr, String slug) {
+        this();
+        this.name = name;
+        this.nameAr = nameAr;
+        this.slug = slug;
+    }
+    
+    // Business Methods
+    public void activate() {
+        this.isActive = true;
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    public void deactivate() {
+        this.isActive = false;
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    public void updateInfo(String name, String nameAr, String description, String descriptionAr) {
+        this.name = name;
+        this.nameAr = nameAr;
+        this.description = description;
+        this.descriptionAr = descriptionAr;
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    // Getters and Setters
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+    
+    public String getDisplayId() { return displayId; }
+    public void setDisplayId(String displayId) { this.displayId = displayId; }
+    
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    
+    public String getNameAr() { return nameAr; }
+    public void setNameAr(String nameAr) { this.nameAr = nameAr; }
+    
+    public String getSlug() { return slug; }
+    public void setSlug(String slug) { this.slug = slug; }
+    
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    
+    public String getDescriptionAr() { return descriptionAr; }
+    public void setDescriptionAr(String descriptionAr) { this.descriptionAr = descriptionAr; }
+    
+    public String getLogoUrl() { return logoUrl; }
+    public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
+    
+    public String getWebsiteUrl() { return websiteUrl; }
+    public void setWebsiteUrl(String websiteUrl) { this.websiteUrl = websiteUrl; }
+    
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+    
+    public Integer getSortOrder() { return sortOrder; }
+    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+    
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    @Override
+    public String toString() {
+        return "Brand{" +
+                "id=" + id +
+                ", displayId='" + displayId + '\'' +
+                ", name='" + name + '\'' +
+                ", nameAr='" + nameAr + '\'' +
+                ", slug='" + slug + '\'' +
+                ", isActive=" + isActive +
+                '}';
+    }
 }
+
+
+/* ---- File: src/main/java/com/ecommerce/multistore/brand/infrastructure/BrandRepository.java ---- */
 
 
 
@@ -93,8 +610,80 @@ public class Brand {
 
 package com.ecommerce.multistore.brand.infrastructure;
 
-public class BrandRepository {
-    
+import com.ecommerce.multistore.brand.domain.Brand;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * مستودع العلامات التجارية
+ * Brand Repository
+ */
+@Repository
+public interface BrandRepository extends JpaRepository<Brand, UUID> {
+
+    /**
+     * البحث بواسطة Display ID
+     */
+    Optional<Brand> findByDisplayId(String displayId);
+
+    /**
+     * البحث بواسطة Slug
+     */
+    Optional<Brand> findBySlug(String slug);
+
+    /**
+     * البحث بواسطة الاسم
+     */
+    Optional<Brand> findByName(String name);
+
+    /**
+     * التحقق من وجود Slug
+     */
+    boolean existsBySlug(String slug);
+
+    /**
+     * التحقق من وجود اسم
+     */
+    boolean existsByName(String name);
+
+    /**
+     * الحصول على العلامات النشطة
+     */
+    List<Brand> findByIsActiveTrueOrderBySortOrderAsc();
+
+    /**
+     * الحصول على العلامات النشطة مع التصفح
+     */
+    Page<Brand> findByIsActiveTrue(Pageable pageable);
+
+    /**
+     * البحث في العلامات التجارية
+     */
+    @Query("SELECT b FROM Brand b WHERE " +
+           "(LOWER(b.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(b.nameAr) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(b.description) LIKE LOWER(CONCAT('%', :query, '%'))) AND " +
+           "b.isActive = true")
+    Page<Brand> searchBrands(@Param("query") String query, Pageable pageable);
+
+    /**
+     * الحصول على العلامات مرتبة حسب الترتيب
+     */
+    List<Brand> findAllByOrderBySortOrderAsc();
+
+    /**
+     * عدد المنتجات لكل علامة تجارية
+     */
+    @Query("SELECT b.id, COUNT(p.id) FROM Brand b LEFT JOIN Product p ON b.id = p.brand.id GROUP BY b.id")
+    List<Object[]> countProductsByBrand();
 }
 
 
@@ -103,68 +692,1072 @@ public class BrandRepository {
 
 package com.ecommerce.multistore.brand.infrastructure.web;
 
+import com.ecommerce.multistore.brand.application.dto.BrandResponse;
+import com.ecommerce.multistore.brand.application.dto.CreateBrandRequest;
+import com.ecommerce.multistore.brand.application.service.BrandService;
+import com.ecommerce.multistore.shared.constants.AppConstants;
+import com.ecommerce.multistore.shared.dto.ApiResponse;
+import com.ecommerce.multistore.shared.dto.PaginatedResponse;
+import com.ecommerce.multistore.shared.utils.PaginationUtils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * تحكم العلامات التجارية
+ * Brand Controller
+ */
+@RestController
+@RequestMapping(AppConstants.API_BASE_PATH + "/brands")
+@Tag(name = "Brands", description = "إدارة العلامات التجارية - Brand Management")
 public class BrandController {
-    
+
+    private final BrandService brandService;
+
+    @Autowired
+    public BrandController(BrandService brandService) {
+        this.brandService = brandService;
+    }
+
+    /**
+     * إنشاء علامة تجارية جديدة
+     * Create new brand
+     */
+    @PostMapping
+    @Operation(summary = "إنشاء علامة تجارية جديدة", description = "Create a new brand")
+    public ResponseEntity<ApiResponse<BrandResponse>> createBrand(
+            @Valid @RequestBody CreateBrandRequest request) {
+        
+        BrandResponse brand = brandService.createBrand(request);
+        
+        ApiResponse<BrandResponse> response = ApiResponse.success(
+            brand, 
+            "Brand created successfully", 
+            201
+        );
+        response.setMessageAr("تم إنشاء العلامة التجارية بنجاح");
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * الحصول على علامة تجارية بواسطة ID
+     * Get brand by ID
+     */
+    @GetMapping("/{id}")
+    @Operation(summary = "Get Brand by ID", description = "الحصول على علامة تجارية بواسطة المعرف")
+    public ResponseEntity<ApiResponse<BrandResponse>> getBrandById(
+            @Parameter(description = "Brand ID") @PathVariable UUID id) {
+
+        return brandService.findById(id)
+                .map(brand -> {
+                    ApiResponse<BrandResponse> response = ApiResponse.success(
+                        brand, 
+                        "Brand retrieved successfully"
+                    );
+                    response.setMessageAr("تم استرجاع العلامة التجارية بنجاح");
+                    return ResponseEntity.ok(response);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * الحصول على علامة تجارية بواسطة Display ID
+     * Get brand by display ID
+     */
+    @GetMapping("/display/{displayId}")
+    @Operation(summary = "Get Brand by Display ID", description = "الحصول على علامة تجارية بواسطة معرف العرض")
+    public ResponseEntity<ApiResponse<BrandResponse>> getBrandByDisplayId(
+            @Parameter(description = "Brand Display ID") @PathVariable String displayId) {
+
+        return brandService.findByDisplayId(displayId)
+                .map(brand -> {
+                    ApiResponse<BrandResponse> response = ApiResponse.success(
+                        brand, 
+                        "Brand retrieved successfully"
+                    );
+                    response.setMessageAr("تم استرجاع العلامة التجارية بنجاح");
+                    return ResponseEntity.ok(response);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * الحصول على علامة تجارية بواسطة Slug
+     * Get brand by slug
+     */
+    @GetMapping("/slug/{slug}")
+    @Operation(summary = "Get Brand by Slug", description = "الحصول على علامة تجارية بواسطة الرابط الودي")
+    public ResponseEntity<ApiResponse<BrandResponse>> getBrandBySlug(
+            @Parameter(description = "Brand Slug") @PathVariable String slug) {
+
+        return brandService.findBySlug(slug)
+                .map(brand -> {
+                    ApiResponse<BrandResponse> response = ApiResponse.success(
+                        brand, 
+                        "Brand retrieved successfully"
+                    );
+                    response.setMessageAr("تم استرجاع العلامة التجارية بنجاح");
+                    return ResponseEntity.ok(response);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+ * الحصول على جميع العلامات التجارية
+ * Get all brands
+ */
+@GetMapping
+@Operation(summary = "Get All Brands", description = "الحصول على جميع العلامات التجارية")
+public ResponseEntity<ApiResponse<PaginatedResponse<BrandResponse>>> getAllBrands(
+        @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
+        @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
+        @Parameter(description = "Sort by field") @RequestParam(defaultValue = "name") String sortBy,
+        @Parameter(description = "Sort direction") @RequestParam(defaultValue = "asc") String sortDir) {
+
+    Pageable pageable = PaginationUtils.createPageable(page, size, sortBy, sortDir);
+    Page<BrandResponse> brands = brandService.getAllBrands(pageable);
+
+    // استخدام static factory method
+    PaginatedResponse<BrandResponse> paginatedResponse = PaginatedResponse.from(brands);
+
+    ApiResponse<PaginatedResponse<BrandResponse>> response = ApiResponse.success(
+        paginatedResponse,
+        "Brands retrieved successfully"
+    );
+    response.setMessageAr("تم استرجاع العلامات التجارية بنجاح");
+
+    return ResponseEntity.ok(response);
+}
+
+
+    /**
+     * الحصول على العلامات التجارية النشطة
+     * Get active brands
+     */
+    @GetMapping("/active")
+    @Operation(summary = "Get Active Brands", description = "الحصول على العلامات التجارية النشطة")
+    public ResponseEntity<ApiResponse<List<BrandResponse>>> getActiveBrands() {
+
+        List<BrandResponse> brands = brandService.getActiveBrands();
+        ApiResponse<List<BrandResponse>> response = ApiResponse.success(
+            brands, 
+            "Active brands retrieved successfully"
+        );
+        response.setMessageAr("تم استرجاع العلامات التجارية النشطة بنجاح");
+
+        return ResponseEntity.ok(response);
+    }
+
+   
+
+/**
+ * البحث في العلامات التجارية
+ * Search brands
+ */
+@GetMapping("/search")
+@Operation(summary = "Search Brands", description = "البحث في العلامات التجارية")
+public ResponseEntity<ApiResponse<PaginatedResponse<BrandResponse>>> searchBrands(
+        @Parameter(description = "Search query") @RequestParam String query,
+        @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
+        @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
+        @Parameter(description = "Sort by field") @RequestParam(defaultValue = "name") String sortBy,
+        @Parameter(description = "Sort direction") @RequestParam(defaultValue = "asc") String sortDir) {
+
+    Pageable pageable = PaginationUtils.createPageable(page, size, sortBy, sortDir);
+    Page<BrandResponse> brands = brandService.searchBrands(query, pageable);
+
+    // استخدام static factory method
+    PaginatedResponse<BrandResponse> paginatedResponse = PaginatedResponse.from(brands);
+
+    ApiResponse<PaginatedResponse<BrandResponse>> response = ApiResponse.success(
+        paginatedResponse,
+        "Brands search completed successfully"
+    );
+    response.setMessageAr("تم البحث في العلامات التجارية بنجاح");
+
+    return ResponseEntity.ok(response);
+}
+    /**
+     * تحديث علامة تجارية
+     * Update brand
+     */
+    @PutMapping("/{id}")
+    @Operation(summary = "Update Brand", description = "تحديث علامة تجارية")
+    public ResponseEntity<ApiResponse<BrandResponse>> updateBrand(
+            @Parameter(description = "Brand ID") @PathVariable UUID id,
+            @Valid @RequestBody CreateBrandRequest request) {
+
+        BrandResponse brand = brandService.updateBrand(id, request);
+        ApiResponse<BrandResponse> response = ApiResponse.success(
+            brand, 
+            "Brand updated successfully"
+        );
+        response.setMessageAr("تم تحديث العلامة التجارية بنجاح");
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * تفعيل علامة تجارية
+     * Activate brand
+     */
+    @PatchMapping("/{id}/activate")
+    @Operation(summary = "Activate Brand", description = "تفعيل علامة تجارية")
+    public ResponseEntity<ApiResponse<BrandResponse>> activateBrand(
+            @Parameter(description = "Brand ID") @PathVariable UUID id) {
+
+        BrandResponse brand = brandService.activateBrand(id);
+        ApiResponse<BrandResponse> response = ApiResponse.success(
+            brand, 
+            "Brand activated successfully"
+        );
+        response.setMessageAr("تم تفعيل العلامة التجارية بنجاح");
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * إلغاء تفعيل علامة تجارية
+     * Deactivate brand
+     */
+    @PatchMapping("/{id}/deactivate")
+    @Operation(summary = "Deactivate Brand", description = "إلغاء تفعيل علامة تجارية")
+    public ResponseEntity<ApiResponse<BrandResponse>> deactivateBrand(
+            @Parameter(description = "Brand ID") @PathVariable UUID id) {
+
+        BrandResponse brand = brandService.deactivateBrand(id);
+        ApiResponse<BrandResponse> response = ApiResponse.success(
+            brand, 
+            "Brand deactivated successfully"
+        );
+        response.setMessageAr("تم إلغاء تفعيل العلامة التجارية بنجاح");
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * حذف علامة تجارية
+     * Delete brand
+     */
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete Brand", description = "حذف علامة تجارية")
+    public ResponseEntity<ApiResponse<Void>> deleteBrand(
+            @Parameter(description = "Brand ID") @PathVariable UUID id) {
+
+        brandService.deleteBrand(id);
+        ApiResponse<Void> response = ApiResponse.success(
+            null, 
+            "Brand deleted successfully"
+        );
+        response.setMessageAr("تم حذف العلامة التجارية بنجاح");
+
+        return ResponseEntity.ok(response);
+    }
 }
 
 
 
 /* ---- File: src/main/java/com/ecommerce/multistore/category/application/dto/CategoryResponse.java ---- */
 
+
+/* ---- File: src/main/java/com/ecommerce/multistore/category/application/dto/CategoryResponse.java ---- */
+
 package com.ecommerce.multistore.category.application.dto;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * استجابة الفئة
+ * Category Response DTO
+ */
 public class CategoryResponse {
-    
+
+    private UUID id;
+    private String displayId;
+    private String name;
+    private String nameAr;
+    private String slug;
+    private String description;
+    private String descriptionAr;
+    private UUID parentId;
+    private String imageUrl;
+    private String icon;
+    private Integer sortOrder;
+    private Boolean isActive;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private Long productCount;
+    private List<CategoryResponse> children;
+
+    // Constructors
+    public CategoryResponse() {}
+
+    // Getters and Setters
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+
+    public String getDisplayId() { return displayId; }
+    public void setDisplayId(String displayId) { this.displayId = displayId; }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public String getNameAr() { return nameAr; }
+    public void setNameAr(String nameAr) { this.nameAr = nameAr; }
+
+    public String getSlug() { return slug; }
+    public void setSlug(String slug) { this.slug = slug; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public String getDescriptionAr() { return descriptionAr; }
+    public void setDescriptionAr(String descriptionAr) { this.descriptionAr = descriptionAr; }
+
+    public UUID getParentId() { return parentId; }
+    public void setParentId(UUID parentId) { this.parentId = parentId; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public String getIcon() { return icon; }
+    public void setIcon(String icon) { this.icon = icon; }
+
+    public Integer getSortOrder() { return sortOrder; }
+    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public Long getProductCount() { return productCount; }
+    public void setProductCount(Long productCount) { this.productCount = productCount; }
+
+    public List<CategoryResponse> getChildren() { return children; }
+    public void setChildren(List<CategoryResponse> children) { this.children = children; }
 }
+
 
 
 
 /* ---- File: src/main/java/com/ecommerce/multistore/category/application/dto/CategoryTreeResponse.java ---- */
 
+/* ---- File: src/main/java/com/ecommerce/multistore/category/application/dto/CategoryTreeResponse.java ---- */
+
 package com.ecommerce.multistore.category.application.dto;
 
+import java.util.List;
+
+/**
+ * استجابة شجرة الفئات
+ * Category Tree Response DTO
+ */
 public class CategoryTreeResponse {
-    
+
+    private List<CategoryResponse> categories;
+    private Integer totalCategories;
+    private Integer activeCategories;
+    private Integer parentCategories;
+    private Integer childCategories;
+
+    // Constructors
+    public CategoryTreeResponse() {}
+
+    public CategoryTreeResponse(List<CategoryResponse> categories) {
+        this.categories = categories;
+        this.totalCategories = categories.size();
+        this.activeCategories = (int) categories.stream().filter(c -> c.getIsActive()).count();
+        this.parentCategories = (int) categories.stream().filter(c -> c.getParentId() == null).count();
+        this.childCategories = (int) categories.stream().filter(c -> c.getParentId() != null).count();
+    }
+
+    // Getters and Setters
+    public List<CategoryResponse> getCategories() { return categories; }
+    public void setCategories(List<CategoryResponse> categories) { this.categories = categories; }
+
+    public Integer getTotalCategories() { return totalCategories; }
+    public void setTotalCategories(Integer totalCategories) { this.totalCategories = totalCategories; }
+
+    public Integer getActiveCategories() { return activeCategories; }
+    public void setActiveCategories(Integer activeCategories) { this.activeCategories = activeCategories; }
+
+    public Integer getParentCategories() { return parentCategories; }
+    public void setParentCategories(Integer parentCategories) { this.parentCategories = parentCategories; }
+
+    public Integer getChildCategories() { return childCategories; }
+    public void setChildCategories(Integer childCategories) { this.childCategories = childCategories; }
 }
 
 
 
 /* ---- File: src/main/java/com/ecommerce/multistore/category/application/dto/CreateCategoryRequest.java ---- */
 
+
+/* ---- File: src/main/java/com/ecommerce/multistore/category/application/dto/CreateCategoryRequest.java ---- */
+
 package com.ecommerce.multistore.category.application.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
+import java.util.UUID;
+
+/**
+ * طلب إنشاء فئة
+ * Create Category Request DTO
+ */
 public class CreateCategoryRequest {
-    
+
+    @NotBlank(message = "Category name is required")
+    @Size(max = 255, message = "Category name cannot exceed 255 characters")
+    private String name;
+
+    @Size(max = 255, message = "Arabic name cannot exceed 255 characters")
+    private String nameAr;
+
+    @Size(max = 5000, message = "Description cannot exceed 5000 characters")
+    private String description;
+
+    @Size(max = 5000, message = "Arabic description cannot exceed 5000 characters")
+    private String descriptionAr;
+
+    private UUID parentId;
+    private String imageUrl;
+    private String icon;
+
+    @Min(value = 0, message = "Sort order cannot be negative")
+    @Max(value = 9999, message = "Sort order cannot exceed 9999")
+    private Integer sortOrder = 0;
+
+    private Boolean isActive = true;
+
+    // Constructors
+    public CreateCategoryRequest() {}
+
+    public CreateCategoryRequest(String name) {
+        this.name = name;
+    }
+
+    // Getters and Setters
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public String getNameAr() { return nameAr; }
+    public void setNameAr(String nameAr) { this.nameAr = nameAr; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public String getDescriptionAr() { return descriptionAr; }
+    public void setDescriptionAr(String descriptionAr) { this.descriptionAr = descriptionAr; }
+
+    public UUID getParentId() { return parentId; }
+    public void setParentId(UUID parentId) { this.parentId = parentId; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public String getIcon() { return icon; }
+    public void setIcon(String icon) { this.icon = icon; }
+
+    public Integer getSortOrder() { return sortOrder; }
+    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
 }
 
 
 
 /* ---- File: src/main/java/com/ecommerce/multistore/category/application/service/CategoryService.java ---- */
 
+
+/* ---- File: src/main/java/com/ecommerce/multistore/category/application/service/CategoryService.java ---- */
+
 package com.ecommerce.multistore.category.application.service;
 
+import com.ecommerce.multistore.category.application.dto.CategoryResponse;
+import com.ecommerce.multistore.category.application.dto.CategoryTreeResponse;
+import com.ecommerce.multistore.category.application.dto.CreateCategoryRequest;
+import com.ecommerce.multistore.category.domain.Category;
+import com.ecommerce.multistore.category.infrastructure.CategoryRepository;
+import com.ecommerce.multistore.shared.exception.BusinessException;
+import com.ecommerce.multistore.shared.exception.DuplicateResourceException;
+import com.ecommerce.multistore.shared.exception.ResourceNotFoundException;
+import com.ecommerce.multistore.shared.utils.SlugGenerator;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * خدمة إدارة الفئات
+ * Category Management Service
+ */
+@Service
+@Transactional
 public class CategoryService {
+
+    private final CategoryRepository categoryRepository;
+
+    @Autowired
+    public CategoryService(CategoryRepository categoryRepository) {
+        this.categoryRepository = categoryRepository;
+    }
+
+    /**
+     * إنشاء فئة جديدة
+     * Create new category
+     */
+    @CacheEvict(value = "categories", allEntries = true)
+    public CategoryResponse createCategory(CreateCategoryRequest request) {
+        // التحقق من عدم وجود اسم مكرر
+        if (categoryRepository.existsByName(request.getName())) {
+            throw new DuplicateResourceException("Category with name '" + request.getName() + "' already exists");
+        }
+
+        // التحقق من وجود الفئة الأب إذا تم تحديدها
+        if (request.getParentId() != null) {
+            categoryRepository.findById(request.getParentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Parent category not found"));
+        }
+
+        // توليد slug فريد
+        String slug = SlugGenerator.generateUniqueSlug(
+            request.getName(), 
+            categoryRepository::existsBySlug
+        );
+
+        // إنشاء الفئة
+        Category category = new Category();
+        category.setName(request.getName());
+        category.setNameAr(request.getNameAr());
+        category.setSlug(slug);
+        category.setDescription(request.getDescription());
+        category.setDescriptionAr(request.getDescriptionAr());
+        category.setParentId(request.getParentId());
+        category.setImageUrl(request.getImageUrl());
+        category.setIcon(request.getIcon());
+        category.setSortOrder(request.getSortOrder());
+        category.setIsActive(request.getIsActive());
+
+        Category savedCategory = categoryRepository.save(category);
+        return convertToResponse(savedCategory);
+    }
+
+    /**
+     * الحصول على فئة بواسطة ID
+     * Get category by ID
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = "categories", key = "#id")
+    public Optional<CategoryResponse> findById(UUID id) {
+        return categoryRepository.findById(id)
+                .map(this::convertToResponse);
+    }
+
+    /**
+     * الحصول على فئة بواسطة Slug
+     * Get category by slug
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = "categories", key = "#slug")
+    public Optional<CategoryResponse> findBySlug(String slug) {
+        return categoryRepository.findBySlug(slug)
+                .map(this::convertToResponse);
+    }
+
+    /**
+     * الحصول على جميع الفئات
+     * Get all categories
+     */
+    @Transactional(readOnly = true)
+    public Page<CategoryResponse> getAllCategories(Pageable pageable) {
+        return categoryRepository.findAll(pageable)
+                .map(this::convertToResponse);
+    }
+
+    /**
+     * الحصول على الفئات الرئيسية
+     * Get parent categories
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = "categories", key = "'parents'")
+    public List<CategoryResponse> getParentCategories() {
+        return categoryRepository.findByParentIdIsNullAndIsActiveTrueOrderBySortOrderAsc()
+                .stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * الحصول على الفئات الفرعية
+     * Get child categories
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = "categories", key = "'children_' + #parentId")
+    public List<CategoryResponse> getChildCategories(UUID parentId) {
+        return categoryRepository.findByParentIdAndIsActiveTrueOrderBySortOrderAsc(parentId)
+                .stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * الحصول على شجرة الفئات
+     * Get category tree
+     */
+    @Transactional(readOnly = true)
+    @Cacheable(value = "categories", key = "'tree'")
+    public CategoryTreeResponse getCategoryTree() {
+        List<Category> allCategories = categoryRepository.findCategoryTree();
+
+        // تجميع الفئات حسب الأب
+        Map<UUID, List<Category>> categoryMap = allCategories.stream()
+                .filter(c -> c.getParentId() != null)
+                .collect(Collectors.groupingBy(Category::getParentId));
+
+        // بناء شجرة الفئات
+        List<CategoryResponse> parentCategories = allCategories.stream()
+                .filter(c -> c.getParentId() == null)
+                .map(parent -> {
+                    CategoryResponse parentResponse = convertToResponse(parent);
+                    List<Category> children = categoryMap.get(parent.getId());
+                    if (children != null) {
+                        List<CategoryResponse> childrenResponses = children.stream()
+                                .map(this::convertToResponse)
+                                .collect(Collectors.toList());
+                        parentResponse.setChildren(childrenResponses);
+                    }
+                    return parentResponse;
+                })
+                .collect(Collectors.toList());
+
+        return new CategoryTreeResponse(parentCategories);
+    }
+
+    /**
+     * البحث في الفئات
+     * Search categories
+     */
+    @Transactional(readOnly = true)
+    public Page<CategoryResponse> searchCategories(String query, Pageable pageable) {
+        return categoryRepository.searchCategories(query, pageable)
+                .map(this::convertToResponse);
+    }
+
+    /**
+     * تحديث فئة
+     * Update category
+     */
+    @CacheEvict(value = "categories", allEntries = true)
+    public CategoryResponse updateCategory(UUID id, CreateCategoryRequest request) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + id));
+
+        // التحقق من عدم وجود اسم مكرر (باستثناء الفئة الحالية)
+        if (!category.getName().equals(request.getName()) && 
+            categoryRepository.existsByName(request.getName())) {
+            throw new DuplicateResourceException("Category with name '" + request.getName() + "' already exists");
+        }
+
+        // التحقق من الفئة الأب
+        if (request.getParentId() != null) {
+            if (request.getParentId().equals(id)) {
+                throw new IllegalArgumentException("Category cannot be its own parent");
+            }
+            categoryRepository.findById(request.getParentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Parent category not found"));
+        }
+
+        // تحديث slug إذا تغير الاسم
+        if (!category.getName().equals(request.getName())) {
+            String newSlug = SlugGenerator.generateUniqueSlug(
+                request.getName(), 
+                slug -> !slug.equals(category.getSlug()) && categoryRepository.existsBySlug(slug)
+            );
+            category.setSlug(newSlug);
+        }
+
+        // تحديث البيانات
+        category.updateInfo(
+            request.getName(),
+            request.getNameAr(),
+            request.getDescription(),
+            request.getDescriptionAr()
+        );
+        category.setParentId(request.getParentId());
+        category.setImageUrl(request.getImageUrl());
+        category.setIcon(request.getIcon());
+        category.setSortOrder(request.getSortOrder());
+        category.setIsActive(request.getIsActive());
+
+        Category updatedCategory = categoryRepository.save(category);
+        return convertToResponse(updatedCategory);
+    }
+
+    // في CategoryService.java
+/**
+ * تفعيل فئة
+ * Activate category
+ */
+@Transactional
+public CategoryResponse activateCategory(UUID id) {
+    Category category = categoryRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + id));
     
+    category.setIsActive(true);
+    category.setUpdatedAt(LocalDateTime.now());
+    
+    Category savedCategory = categoryRepository.save(category);
+    return convertToResponse(savedCategory);
+}
+
+/**
+ * إلغاء تفعيل فئة
+ * Deactivate category
+ */
+@Transactional
+public CategoryResponse deactivateCategory(UUID id) {
+    Category category = categoryRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + id));
+    
+    // التحقق من وجود فئات فرعية نشطة
+    if (categoryRepository.existsByParentIdAndIsActive(id, true)) {
+        throw new BusinessException("Cannot deactivate category with active subcategories");
+    }
+    
+    category.setIsActive(false);
+    category.setUpdatedAt(LocalDateTime.now());
+    
+    Category savedCategory = categoryRepository.save(category);
+    return convertToResponse(savedCategory);
+}
+
+
+    /**
+     * حذف فئة
+     * Delete category
+     */
+    @CacheEvict(value = "categories", allEntries = true)
+    public void deleteCategory(UUID id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + id));
+
+        // التحقق من عدم وجود فئات فرعية
+        List<Category> children = categoryRepository.findByParentIdAndIsActiveTrueOrderBySortOrderAsc(id);
+        if (!children.isEmpty()) {
+            throw new IllegalStateException("Cannot delete category with active children");
+        }
+
+        categoryRepository.delete(category);
+    }
+
+    // Helper Methods
+
+    /**
+     * تحويل Entity إلى Response DTO
+     * Convert entity to response DTO
+     */
+    private CategoryResponse convertToResponse(Category category) {
+        CategoryResponse response = new CategoryResponse();
+        response.setId(category.getId());
+        response.setDisplayId(category.getDisplayId());
+        response.setName(category.getName());
+        response.setNameAr(category.getNameAr());
+        response.setSlug(category.getSlug());
+        response.setDescription(category.getDescription());
+        response.setDescriptionAr(category.getDescriptionAr());
+        response.setParentId(category.getParentId());
+        response.setImageUrl(category.getImageUrl());
+        response.setIcon(category.getIcon());
+        response.setSortOrder(category.getSortOrder());
+        response.setIsActive(category.getIsActive());
+        response.setCreatedAt(category.getCreatedAt());
+        response.setUpdatedAt(category.getUpdatedAt());
+        return response;
+    }
 }
 
 
 
 /* ---- File: src/main/java/com/ecommerce/multistore/category/domain/Category.java ---- */
 
+
+/* ---- File: src/main/java/com/ecommerce/multistore/category/domain/Category.java ---- */
+
 package com.ecommerce.multistore.category.domain;
 
+import jakarta.persistence.*;
+import org.hibernate.annotations.GenericGenerator;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * كيان الفئة
+ * Category Entity
+ */
+@Entity
+@Table(name = "categories")
 public class Category {
-    
+
+    @Id
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    private UUID id;
+
+    @Column(name = "display_id", unique = true)
+    private String displayId;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(name = "name_ar")
+    private String nameAr;
+
+    @Column(unique = true, nullable = false)
+    private String slug;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "description_ar", columnDefinition = "TEXT")
+    private String descriptionAr;
+
+    @Column(name = "parent_id")
+    private UUID parentId;
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
+    private String icon;
+
+    @Column(name = "sort_order")
+    private Integer sortOrder = 0;
+
+    @Column(name = "is_active")
+    private Boolean isActive = true;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    // Relations
+    @OneToMany(mappedBy = "parentId", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Category> children = new ArrayList<>();
+
+    // Constructors
+    public Category() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public Category(String name, String slug) {
+        this();
+        this.name = name;
+        this.slug = slug;
+    }
+
+    // Business Methods
+    public boolean isParent() {
+        return parentId == null;
+    }
+
+    public boolean hasChildren() {
+        return children != null && !children.isEmpty();
+    }
+
+    public void activate() {
+        this.isActive = true;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void deactivate() {
+        this.isActive = false;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void updateInfo(String name, String nameAr, String description, String descriptionAr) {
+        this.name = name;
+        this.nameAr = nameAr;
+        this.description = description;
+        this.descriptionAr = descriptionAr;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // Getters and Setters
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+
+    public String getDisplayId() { return displayId; }
+    public void setDisplayId(String displayId) { this.displayId = displayId; }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public String getNameAr() { return nameAr; }
+    public void setNameAr(String nameAr) { this.nameAr = nameAr; }
+
+    public String getSlug() { return slug; }
+    public void setSlug(String slug) { this.slug = slug; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public String getDescriptionAr() { return descriptionAr; }
+    public void setDescriptionAr(String descriptionAr) { this.descriptionAr = descriptionAr; }
+
+    public UUID getParentId() { return parentId; }
+    public void setParentId(UUID parentId) { this.parentId = parentId; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
+    public String getIcon() { return icon; }
+    public void setIcon(String icon) { this.icon = icon; }
+
+    public Integer getSortOrder() { return sortOrder; }
+    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public List<Category> getChildren() { return children; }
+    public void setChildren(List<Category> children) { this.children = children; }
 }
 
 
 
 /* ---- File: src/main/java/com/ecommerce/multistore/category/infrastructure/CategoryRepository.java ---- */
 
+
+/* ---- File: src/main/java/com/ecommerce/multistore/category/infrastructure/CategoryRepository.java ---- */
+
 package com.ecommerce.multistore.category.infrastructure;
 
-public class CategoryRepository {
-    
+import com.ecommerce.multistore.category.domain.Category;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * مستودع الفئات
+ * Category Repository
+ */
+@Repository
+public interface CategoryRepository extends JpaRepository<Category, UUID> {
+
+    /**
+     * البحث بواسطة Display ID
+     */
+    Optional<Category> findByDisplayId(String displayId);
+
+    /**
+     * البحث بواسطة Slug
+     */
+    Optional<Category> findBySlug(String slug);
+
+    /**
+     * البحث بواسطة الاسم
+     */
+    Optional<Category> findByName(String name);
+
+    /**
+     * التحقق من وجود Slug
+     */
+    boolean existsBySlug(String slug);
+
+    /**
+     * التحقق من وجود اسم
+     */
+    boolean existsByName(String name);
+
+    /**
+     * الحصول على الفئات الرئيسية
+     */
+    List<Category> findByParentIdIsNullAndIsActiveTrueOrderBySortOrderAsc();
+
+    /**
+     * الحصول على الفئات الفرعية
+     */
+    List<Category> findByParentIdAndIsActiveTrueOrderBySortOrderAsc(UUID parentId);
+// في CategoryRepository.java
+boolean existsByParentIdAndIsActive(UUID parentId, boolean isActive);
+
+    /**
+     * الحصول على الفئات النشطة
+     */
+    List<Category> findByIsActiveTrueOrderBySortOrderAsc();
+
+    /**
+     * الحصول على الفئات النشطة مع التصفح
+     */
+    Page<Category> findByIsActiveTrue(Pageable pageable);
+
+    /**
+     * البحث في الفئات
+     */
+    @Query("SELECT c FROM Category c WHERE " +
+           "(LOWER(c.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(c.nameAr) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(c.description) LIKE LOWER(CONCAT('%', :query, '%'))) AND " +
+           "c.isActive = true")
+    Page<Category> searchCategories(@Param("query") String query, Pageable pageable);
+
+    /**
+     * عدد المنتجات لكل فئة
+     */
+    @Query("SELECT c.id, COUNT(p.id) FROM Category c LEFT JOIN Product p ON c.id = p.category.id GROUP BY c.id")
+    List<Object[]> countProductsByCategory();
+
+    /**
+     * الحصول على شجرة الفئات
+     */
+    @Query("SELECT c FROM Category c WHERE c.isActive = true ORDER BY c.parentId NULLS FIRST, c.sortOrder ASC")
+    List<Category> findCategoryTree();
 }
 
 
@@ -173,8 +1766,292 @@ public class CategoryRepository {
 
 package com.ecommerce.multistore.category.infrastructure.web;
 
+import com.ecommerce.multistore.category.application.dto.CategoryResponse;
+import com.ecommerce.multistore.category.application.dto.CategoryTreeResponse;
+import com.ecommerce.multistore.category.application.dto.CreateCategoryRequest;
+import com.ecommerce.multistore.category.application.service.CategoryService;
+import com.ecommerce.multistore.shared.constants.AppConstants;
+import com.ecommerce.multistore.shared.dto.ApiResponse;
+import com.ecommerce.multistore.shared.dto.PaginatedResponse;
+import com.ecommerce.multistore.shared.utils.PaginationUtils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * تحكم الفئات
+ * Category Controller
+ */
+@RestController
+@RequestMapping(AppConstants.API_BASE_PATH + "/categories")
+@Tag(name = "Categories", description = "إدارة الفئات - Category Management")
 public class CategoryController {
-    
+
+    private final CategoryService categoryService;
+
+    @Autowired
+    public CategoryController(CategoryService categoryService) {
+        this.categoryService = categoryService;
+    }
+
+    /**
+     * إنشاء فئة جديدة
+     * Create new category
+     */
+    @PostMapping
+    @Operation(summary = "Create Category", description = "إنشاء فئة جديدة")
+    public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(
+            @Valid @RequestBody CreateCategoryRequest request) {
+
+        CategoryResponse category = categoryService.createCategory(request);
+        ApiResponse<CategoryResponse> response = ApiResponse.success(
+            category,
+            "Category created successfully",
+            201
+        );
+        response.setMessageAr("تم إنشاء الفئة بنجاح");
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * الحصول على فئة بواسطة ID
+     * Get category by ID
+     */
+    @GetMapping("/{id}")
+    @Operation(summary = "Get Category by ID", description = "الحصول على فئة بواسطة المعرف")
+    public ResponseEntity<ApiResponse<CategoryResponse>> getCategoryById(
+            @Parameter(description = "Category ID") @PathVariable UUID id) {
+
+        return categoryService.findById(id)
+                .map(category -> {
+                    ApiResponse<CategoryResponse> response = ApiResponse.success(
+                        category,
+                        "Category retrieved successfully"
+                    );
+                    response.setMessageAr("تم استرجاع الفئة بنجاح");
+                    return ResponseEntity.ok(response);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * الحصول على فئة بواسطة Slug
+     * Get category by slug
+     */
+    @GetMapping("/slug/{slug}")
+    @Operation(summary = "Get Category by Slug", description = "الحصول على فئة بواسطة الرابط الودي")
+    public ResponseEntity<ApiResponse<CategoryResponse>> getCategoryBySlug(
+            @Parameter(description = "Category Slug") @PathVariable String slug) {
+
+        return categoryService.findBySlug(slug)
+                .map(category -> {
+                    ApiResponse<CategoryResponse> response = ApiResponse.success(
+                        category,
+                        "Category retrieved successfully"
+                    );
+                    response.setMessageAr("تم استرجاع الفئة بنجاح");
+                    return ResponseEntity.ok(response);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * الحصول على جميع الفئات
+     * Get all categories
+     */
+    @GetMapping
+    @Operation(summary = "Get All Categories", description = "الحصول على جميع الفئات")
+    public ResponseEntity<ApiResponse<PaginatedResponse<CategoryResponse>>> getAllCategories(
+            @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Sort by field") @RequestParam(defaultValue = "name") String sortBy,
+            @Parameter(description = "Sort direction") @RequestParam(defaultValue = "asc") String sortDir) {
+
+        Pageable pageable = PaginationUtils.createPageable(page, size, sortBy, sortDir);
+        Page<CategoryResponse> categories = categoryService.getAllCategories(pageable);
+
+        // استخدام static factory method
+        PaginatedResponse<CategoryResponse> paginatedResponse = PaginatedResponse.from(categories);
+
+        ApiResponse<PaginatedResponse<CategoryResponse>> response = ApiResponse.success(
+            paginatedResponse,
+            "Categories retrieved successfully"
+        );
+        response.setMessageAr("تم استرجاع الفئات بنجاح");
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * الحصول على الفئات الرئيسية
+     * Get parent categories
+     */
+    @GetMapping("/parents")
+    @Operation(summary = "Get Parent Categories", description = "الحصول على الفئات الرئيسية")
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getParentCategories() {
+
+        List<CategoryResponse> categories = categoryService.getParentCategories();
+        ApiResponse<List<CategoryResponse>> response = ApiResponse.success(
+            categories,
+            "Parent categories retrieved successfully"
+        );
+        response.setMessageAr("تم استرجاع الفئات الرئيسية بنجاح");
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * الحصول على الفئات الفرعية
+     * Get child categories
+     */
+    @GetMapping("/{parentId}/children")
+    @Operation(summary = "Get Child Categories", description = "الحصول على الفئات الفرعية")
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getChildCategories(
+            @Parameter(description = "Parent Category ID") @PathVariable UUID parentId) {
+
+        List<CategoryResponse> categories = categoryService.getChildCategories(parentId);
+        ApiResponse<List<CategoryResponse>> response = ApiResponse.success(
+            categories,
+            "Child categories retrieved successfully"
+        );
+        response.setMessageAr("تم استرجاع الفئات الفرعية بنجاح");
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * الحصول على شجرة الفئات
+     * Get category tree
+     */
+    @GetMapping("/tree")
+    @Operation(summary = "Get Category Tree", description = "الحصول على شجرة الفئات")
+    public ResponseEntity<ApiResponse<CategoryTreeResponse>> getCategoryTree() {
+
+        CategoryTreeResponse tree = categoryService.getCategoryTree();
+        ApiResponse<CategoryTreeResponse> response = ApiResponse.success(
+            tree,
+            "Category tree retrieved successfully"
+        );
+        response.setMessageAr("تم استرجاع شجرة الفئات بنجاح");
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * البحث في الفئات
+     * Search categories
+     */
+    @GetMapping("/search")
+    @Operation(summary = "Search Categories", description = "البحث في الفئات")
+    public ResponseEntity<ApiResponse<PaginatedResponse<CategoryResponse>>> searchCategories(
+            @Parameter(description = "Search query") @RequestParam String query,
+            @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Sort by field") @RequestParam(defaultValue = "name") String sortBy,
+            @Parameter(description = "Sort direction") @RequestParam(defaultValue = "asc") String sortDir) {
+
+        Pageable pageable = PaginationUtils.createPageable(page, size, sortBy, sortDir);
+        Page<CategoryResponse> categories = categoryService.searchCategories(query, pageable);
+
+        // استخدام static factory method
+        PaginatedResponse<CategoryResponse> paginatedResponse = PaginatedResponse.from(categories);
+
+        ApiResponse<PaginatedResponse<CategoryResponse>> response = ApiResponse.success(
+            paginatedResponse,
+            "Categories search completed successfully"
+        );
+        response.setMessageAr("تم البحث في الفئات بنجاح");
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * تحديث فئة
+     * Update category
+     */
+    @PutMapping("/{id}")
+    @Operation(summary = "Update Category", description = "تحديث فئة")
+    public ResponseEntity<ApiResponse<CategoryResponse>> updateCategory(
+            @Parameter(description = "Category ID") @PathVariable UUID id,
+            @Valid @RequestBody CreateCategoryRequest request) {
+
+        CategoryResponse category = categoryService.updateCategory(id, request);
+        ApiResponse<CategoryResponse> response = ApiResponse.success(
+            category,
+            "Category updated successfully"
+        );
+        response.setMessageAr("تم تحديث الفئة بنجاح");
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * تفعيل فئة
+     * Activate category
+     */
+    @PatchMapping("/{id}/activate")
+    @Operation(summary = "Activate Category", description = "تفعيل فئة")
+    public ResponseEntity<ApiResponse<CategoryResponse>> activateCategory(
+            @Parameter(description = "Category ID") @PathVariable UUID id) {
+
+        CategoryResponse category = categoryService.activateCategory(id);
+        ApiResponse<CategoryResponse> response = ApiResponse.success(
+            category,
+            "Category activated successfully"
+        );
+        response.setMessageAr("تم تفعيل الفئة بنجاح");
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * إلغاء تفعيل فئة
+     * Deactivate category
+     */
+    @PatchMapping("/{id}/deactivate")
+    @Operation(summary = "Deactivate Category", description = "إلغاء تفعيل فئة")
+    public ResponseEntity<ApiResponse<CategoryResponse>> deactivateCategory(
+            @Parameter(description = "Category ID") @PathVariable UUID id) {
+
+        CategoryResponse category = categoryService.deactivateCategory(id);
+        ApiResponse<CategoryResponse> response = ApiResponse.success(
+            category,
+            "Category deactivated successfully"
+        );
+        response.setMessageAr("تم إلغاء تفعيل الفئة بنجاح");
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * حذف فئة
+     * Delete category
+     */
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete Category", description = "حذف فئة")
+    public ResponseEntity<ApiResponse<Void>> deleteCategory(
+            @Parameter(description = "Category ID") @PathVariable UUID id) {
+
+        categoryService.deleteCategory(id);
+        ApiResponse<Void> response = ApiResponse.success(
+            null,
+            "Category deleted successfully"
+        );
+        response.setMessageAr("تم حذف الفئة بنجاح");
+
+        return ResponseEntity.ok(response);
+    }
 }
 
 
@@ -221,11 +2098,141 @@ public class InventoryService {
 
 /* ---- File: src/main/java/com/ecommerce/multistore/inventory/domain/InventoryMovement.java ---- */
 
+
+/* =====================================================
+ * وحدة المخزون - Inventory Module
+ * =====================================================
+ */
+
+/* ---- File: src/main/java/com/ecommerce/multistore/inventory/domain/InventoryMovement.java ---- */
+
 package com.ecommerce.multistore.inventory.domain;
 
+import jakarta.persistence.*;
+import org.hibernate.annotations.GenericGenerator;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+/**
+ * كيان حركة المخزون
+ * Inventory Movement Entity
+ */
+@Entity
+@Table(name = "inventory_movements")
 public class InventoryMovement {
-    
+
+    @Id
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    private UUID id;
+
+    @Column(name = "display_id", unique = true)
+    private String displayId;
+
+    @Column(name = "product_id", nullable = false)
+    private UUID productId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "movement_type", nullable = false)
+    private MovementType movementType;
+
+    @Column(nullable = false)
+    private Integer quantity;
+
+    @Column(name = "reference_type")
+    private String referenceType;
+
+    @Column(name = "reference_id")
+    private UUID referenceId;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
+    @Column(name = "created_by")
+    private UUID createdBy;
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    // Constructors
+    public InventoryMovement() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public InventoryMovement(UUID productId, MovementType movementType, Integer quantity) {
+        this();
+        this.productId = productId;
+        this.movementType = movementType;
+        this.quantity = quantity;
+    }
+
+    // Business Methods
+    public boolean isInbound() {
+        return movementType == MovementType.IN || movementType == MovementType.RELEASED;
+    }
+
+    public boolean isOutbound() {
+        return movementType == MovementType.OUT || movementType == MovementType.RESERVED;
+    }
+
+    public Integer getEffectiveQuantity() {
+        return isInbound() ? quantity : -quantity;
+    }
+
+    // Getters and Setters
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+
+    public String getDisplayId() { return displayId; }
+    public void setDisplayId(String displayId) { this.displayId = displayId; }
+
+    public UUID getProductId() { return productId; }
+    public void setProductId(UUID productId) { this.productId = productId; }
+
+    public MovementType getMovementType() { return movementType; }
+    public void setMovementType(MovementType movementType) { this.movementType = movementType; }
+
+    public Integer getQuantity() { return quantity; }
+    public void setQuantity(Integer quantity) { this.quantity = quantity; }
+
+    public String getReferenceType() { return referenceType; }
+    public void setReferenceType(String referenceType) { this.referenceType = referenceType; }
+
+    public UUID getReferenceId() { return referenceId; }
+    public void setReferenceId(UUID referenceId) { this.referenceId = referenceId; }
+
+    public String getNotes() { return notes; }
+    public void setNotes(String notes) { this.notes = notes; }
+
+    public UUID getCreatedBy() { return createdBy; }
+    public void setCreatedBy(UUID createdBy) { this.createdBy = createdBy; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    /**
+     * أنواع حركة المخزون
+     * Movement Types
+     */
+    public enum MovementType {
+        IN("دخول"),
+        OUT("خروج"),
+        ADJUSTMENT("تعديل"),
+        RESERVED("محجوز"),
+        RELEASED("محرر");
+
+        private final String arabicName;
+
+        MovementType(String arabicName) {
+            this.arabicName = arabicName;
+        }
+
+        public String getArabicName() {
+            return arabicName;
+        }
+    }
 }
+
 
 
 
@@ -251,19 +2258,28 @@ public class InventoryController {
 
 /* ---- File: src/main/java/com/ecommerce/multistore/MultiStoreBackendApplication.java ---- */
 
+
+/* ---- File: src/main/java/com/ecommerce/multistore/MultiStoreBackendApplication.java ---- */
+
 package com.ecommerce.multistore;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @SpringBootApplication
+@EnableCaching
+@EnableAsync
+@EnableTransactionManagement
 public class MultiStoreBackendApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(MultiStoreBackendApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(MultiStoreBackendApplication.class, args);
+    }
 }
+
 
 
 
@@ -9803,6 +11819,11 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.servers.Server;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.tags.Tag;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -9812,11 +11833,21 @@ import java.util.List;
  * إعدادات Swagger/OpenAPI
  * Swagger/OpenAPI Configuration
  * 
+ * يوفر واجهة توثيق تفاعلية لجميع APIs
+ * Provides interactive documentation interface for all APIs
+ * 
  * @author Multi-Store Team
  * @version 1.0
+ * @since 2024-01-01
  */
 @Configuration
 public class SwaggerConfig {
+
+    @Value("${server.port:8080}")
+    private String serverPort;
+
+    @Value("${spring.application.name:multi-store-backend}")
+    private String applicationName;
 
     /**
      * إعداد OpenAPI للتوثيق
@@ -9827,24 +11858,140 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
-                .info(new Info()
-                        .title("Multi-Store E-commerce API")
-                        .description("API متكامل للمتجر الإلكتروني متعدد المجالات - A comprehensive API for multi-domain e-commerce platform")
-                        .version("1.0.0")
-                        .contact(new Contact()
-                                .name("Multi-Store Team")
-                                .email("support@multistore.com")
-                                .url("https://multistore.com"))
-                        .license(new License()
-                                .name("MIT License")
-                                .url("https://opensource.org/licenses/MIT")))
-                .servers(List.of(
-                        new Server()
-                                .url("http://localhost:8080")
-                                .description("Development Server"),
-                        new Server()
-                                .url("https://api.multistore.com")
-                                .description("Production Server")));
+                .info(createApiInfo())
+                .servers(createServers())
+                .components(createComponents())
+                .security(createSecurityRequirements())
+                .tags(createTags());
+    }
+
+    /**
+     * إنشاء معلومات API
+     * Create API information
+     */
+    private Info createApiInfo() {
+        return new Info()
+                .title("Multi-Store E-commerce API")
+                .description("""
+                    **API متكامل للمتجر الإلكتروني متعدد المجالات**
+                    
+                    A comprehensive RESTful API for multi-domain e-commerce platform built with Spring Boot.
+                    
+                    ## Features:
+                    - 👥 User Management
+                    - 🏷️ Brand Management  
+                    - 📂 Category Management
+                    - 🛍️ Product Management
+                    - 📦 Order Management
+                    - 💳 Payment Processing
+                    - 📊 Analytics & Reporting
+                    - 🔐 Security & Authentication
+                    - 📱 Mobile-First Design
+                    
+                    ## Authentication:
+                    - Use API Key in header: `X-API-Key`
+                    - Or Bearer Token: `Authorization: Bearer <token>`
+                    
+                    ## Rate Limiting:
+                    - 100 requests per minute per IP
+                    - Headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+                    
+                    ## Response Format:
+                    All responses follow unified `ApiResponse<T>` format with Arabic/English messages.
+                    """)
+                .version("1.0.0")
+                .contact(new Contact()
+                        .name("Multi-Store Development Team")
+                        .email("dev@multistore.com")
+                        .url("https://github.com/multistore/backend"))
+                .license(new License()
+                        .name("MIT License")
+                        .url("https://opensource.org/licenses/MIT"));
+    }
+
+    /**
+     * إنشاء قائمة الخوادم
+     * Create servers list
+     */
+    private List<Server> createServers() {
+        return List.of(
+                new Server()
+                        .url("http://localhost:" + serverPort)
+                        .description("🔧 Development Server - خادم التطوير"),
+                new Server()
+                        .url("https://api-dev.multistore.com")
+                        .description("🧪 Staging Server - خادم الاختبار"),
+                new Server()
+                        .url("https://api.multistore.com")
+                        .description("🚀 Production Server - خادم الإنتاج")
+        );
+    }
+
+    /**
+     * إنشاء مكونات الأمان
+     * Create security components
+     */
+    private Components createComponents() {
+        return new Components()
+                .addSecuritySchemes("ApiKey", new SecurityScheme()
+                        .type(SecurityScheme.Type.APIKEY)
+                        .in(SecurityScheme.In.HEADER)
+                        .name("X-API-Key")
+                        .description("API Key للتحقق من الهوية"))
+                .addSecuritySchemes("Bearer", new SecurityScheme()
+                        .type(SecurityScheme.Type.HTTP)
+                        .scheme("bearer")
+                        .bearerFormat("JWT")
+                        .description("JWT Bearer Token"))
+                .addSecuritySchemes("Basic", new SecurityScheme()
+                        .type(SecurityScheme.Type.HTTP)
+                        .scheme("basic")
+                        .description("Basic Authentication"));
+    }
+
+    /**
+     * إنشاء متطلبات الأمان
+     * Create security requirements
+     */
+    private List<SecurityRequirement> createSecurityRequirements() {
+        return List.of(
+                new SecurityRequirement().addList("ApiKey"),
+                new SecurityRequirement().addList("Bearer"),
+                new SecurityRequirement().addList("Basic")
+        );
+    }
+
+    /**
+     * إنشاء العلامات
+     * Create tags
+     */
+    private List<Tag> createTags() {
+        return List.of(
+                new Tag()
+                        .name("Users")
+                        .description("👥 إدارة المستخدمين - User Management"),
+                new Tag()
+                        .name("Brands")
+                        .description("🏷️ إدارة العلامات التجارية - Brand Management"),
+                new Tag()
+                        .name("Categories")
+                        .description("📂 إدارة الفئات - Category Management"),
+                new Tag()
+                        .name("Products")
+                        .description("🛍️ إدارة المنتجات - Product Management"),
+                new Tag()
+                        .name("Orders")
+                        .description("📦 إدارة الطلبات - Order Management"),
+                new Tag()
+                        .name("Payments")
+                        .description("💳 إدارة المدفوعات - Payment Management"),
+                new Tag()
+                        .name("Analytics")
+                        .description("📊 التحليلات والتقارير - Analytics & Reports"),
+                new Tag()
+                        .name("Inventory")
+                        .description("📋 إدارة المخزون - Inventory Management")
+        );
     }
 }
 
@@ -9854,10 +12001,148 @@ public class SwaggerConfig {
 
 package com.ecommerce.multistore.shared.constants;
 
+/**
+ * ثوابت التطبيق العامة
+ * Application Constants
+ * 
+ * @author Multi-Store Team
+ * @version 1.0
+ * @since 2024-01-01
+ */
 public class AppConstants {
+  
+    // Rate Limiting Constants
+    public static final int RATE_LIMIT_REQUESTS = 100;
+    public static final int RATE_LIMIT_PERIOD = 60; // seconds
+    public static final int RATE_LIMIT_WINDOW_MINUTES = 1; // 1 minute window
+    public static final int RATE_LIMIT_WINDOW_SECONDS = RATE_LIMIT_WINDOW_MINUTES * 60;
+    public static final int RATE_LIMIT_WINDOW_MILLISECONDS = RATE_LIMIT_WINDOW_SECONDS * 1000;
     
-}
+    // Rate Limiting Time Windows
+    public static final int RATE_LIMIT_WINDOW_MINUTES_SHORT = 1; // 1 minute
+    public static final int RATE_LIMIT_WINDOW_MINUTES_MEDIUM = 5; // 5 minutes
+    public static final int RATE_LIMIT_WINDOW_MINUTES_LONG = 15; // 15 minutes
+    public static final int RATE_LIMIT_WINDOW_MINUTES_EXTENDED = 60; // 1 hour
+    
+    // Rate Limiting per different time windows
+    public static final int RATE_LIMIT_REQUESTS_PER_MINUTE = 100;
+    public static final int RATE_LIMIT_REQUESTS_PER_5_MINUTES = 300;
+    public static final int RATE_LIMIT_REQUESTS_PER_15_MINUTES = 500;
+    public static final int RATE_LIMIT_REQUESTS_PER_HOUR = 1000;
+    public static final int RATE_LIMIT_REQUESTS_PER_DAY = 10000;
+    
+    // Rate Limiting Burst Settings
+    public static final int RATE_LIMIT_BURST_SIZE = 20; // burst requests
+    public static final int RATE_LIMIT_BURST_WINDOW_SECONDS = 10; // burst window
+    
+    // Rate Limiting Cleanup and Maintenance
+    public static final int RATE_LIMIT_CLEANUP_INTERVAL = 300; // 5 minutes
+    public static final int RATE_LIMIT_CACHE_SIZE = 10000; // max cached entries
+    public static final int RATE_LIMIT_CACHE_EXPIRY_MINUTES = 60; // cache expiry
+    
+    
 
+    // ثوابت عامة - General Constants
+    public static final String DEFAULT_LANGUAGE = "ar";
+    public static final String DEFAULT_CURRENCY = "YER";
+    public static final String DEFAULT_COUNTRY = "Yemen";
+    public static final String DEFAULT_TIMEZONE = "Asia/Aden";
+
+     // API Base Path
+    public static final String API_BASE_PATH = "/api/v1";
+    // Security Constants
+    public static final String API_KEY_HEADER = "X-API-Key";
+    public static final String AUTHORIZATION_HEADER = "Authorization";
+    public static final String BEARER_PREFIX = "Bearer ";
+    // ثوابت التصفح - Pagination Constants
+    public static final int DEFAULT_PAGE_SIZE = 20;
+    public static final int MAX_PAGE_SIZE = 100;
+    public static final String DEFAULT_SORT_BY = "createdAt";
+    public static final String DEFAULT_SORT_DIR = "desc";
+    
+    // ثوابت الملفات - File Constants
+    public static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    public static final String[] ALLOWED_IMAGE_TYPES = {"jpg", "jpeg", "png", "gif", "webp"};
+    public static final String UPLOAD_DIR = "uploads/";
+    public static final String IMAGES_DIR = "images/";
+    
+    // ثوابت الأمان - Security Constants
+    public static final int MIN_PASSWORD_LENGTH = 6;
+    public static final int MAX_PASSWORD_LENGTH = 100;
+    public static final int TOKEN_EXPIRY_HOURS = 24;
+    public static final int REFRESH_TOKEN_EXPIRY_DAYS = 30;
+    public static final int MAX_LOGIN_ATTEMPTS = 5;
+    public static final int LOCKOUT_DURATION_MINUTES = 15;
+    
+    // ثوابت التحقق - Validation Constants
+    public static final int MIN_PRODUCT_NAME_LENGTH = 3;
+    public static final int MAX_PRODUCT_NAME_LENGTH = 255;
+    public static final int MIN_DESCRIPTION_LENGTH = 10;
+    public static final int MAX_DESCRIPTION_LENGTH = 5000;
+    public static final int MAX_SLUG_LENGTH = 255;
+    
+    // ثوابت الطلبات - Order Constants
+    public static final int ORDER_NUMBER_LENGTH = 12;
+    public static final int MAX_ORDER_ITEMS = 50;
+    public static final double MIN_ORDER_AMOUNT = 0.01;
+    public static final double MAX_ORDER_AMOUNT = 999999.99;
+    
+    // ثوابت الشحن - Shipping Constants
+    public static final double DEFAULT_SHIPPING_COST = 5000.0;
+    public static final double FREE_SHIPPING_THRESHOLD = 50000.0;
+    public static final int DELIVERY_DAYS_MIN = 1;
+    public static final int DELIVERY_DAYS_MAX = 7;
+    
+    // ثوابت المدفوعات - Payment Constants
+    public static final double PAYMENT_PROCESSING_FEE = 0.025; // 2.5%
+    public static final double MAX_PAYMENT_AMOUNT = 1000000.0;
+    public static final int PAYMENT_TIMEOUT_MINUTES = 15;
+    
+    // ثوابت المخزون - Inventory Constants
+    public static final int LOW_STOCK_THRESHOLD = 10;
+    public static final int DEFAULT_STOCK_QUANTITY = 0;
+    public static final int MAX_STOCK_QUANTITY = 999999;
+    
+    // ثوابت التحليلات - Analytics Constants
+    public static final int ANALYTICS_RETENTION_DAYS = 365;
+    public static final int TOP_PRODUCTS_LIMIT = 10;
+    public static final int REPORT_CACHE_HOURS = 1;
+    
+    // رسائل الأخطاء - Error Messages
+    public static final String ERROR_INVALID_INPUT = "بيانات غير صحيحة";
+    public static final String ERROR_RESOURCE_NOT_FOUND = "المورد غير موجود";
+    public static final String ERROR_UNAUTHORIZED = "غير مصرح";
+    public static final String ERROR_FORBIDDEN = "ممنوع";
+    public static final String ERROR_SERVER_ERROR = "خطأ في الخادم";
+    
+    // رسائل النجاح - Success Messages
+    public static final String SUCCESS_CREATED = "تم الإنشاء بنجاح";
+    public static final String SUCCESS_UPDATED = "تم التحديث بنجاح";
+    public static final String SUCCESS_DELETED = "تم الحذف بنجاح";
+    
+    // صفحات الأخطاء - Error Pages
+    public static final String ERROR_PAGE_404 = "/error/404";
+    public static final String ERROR_PAGE_500 = "/error/500";
+    public static final String ERROR_PAGE_403 = "/error/403";
+    
+    // Headers
+    public static final String HEADER_API_KEY = "X-API-Key";
+    public static final String HEADER_RATE_LIMIT = "X-Rate-Limit";
+    public static final String HEADER_RATE_REMAINING = "X-Rate-Limit-Remaining";
+    public static final String HEADER_LANGUAGE = "Accept-Language";
+    
+    // Cache Names
+    public static final String CACHE_PRODUCTS = "products";
+    public static final String CACHE_CATEGORIES = "categories";
+    public static final String CACHE_BRANDS = "brands";
+    public static final String CACHE_SETTINGS = "settings";
+    
+    // Private constructor to prevent instantiation
+    private AppConstants() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+    }
+}
+  
 
 
 /* ---- File: src/main/java/com/ecommerce/multistore/shared/dto/ApiResponse.java ---- */
@@ -9873,103 +12158,66 @@ import java.time.LocalDateTime;
 /**
  * استجابة API موحدة لجميع endpoints
  * Unified API response wrapper for all endpoints
- * 
- * يوفر تنسيق موحد للاستجابات مع معلومات إضافية مثل الرسائل والأخطاء
- * Provides consistent response format with additional info like messages and errors
- * 
- * @param <T> نوع البيانات المرجعة / Type of data being returned
- * 
- * @author Multi-Store Team
- * @version 1.0
- * @since 2024-01-01
  */
 @Schema(description = "استجابة API موحدة / Unified API Response")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {
     
-    /**
-     * حالة نجاح العملية
-     * Operation success status
-     */
     @Schema(description = "حالة نجاح العملية / Operation success status", example = "true")
     private boolean success;
     
-    /**
-     * رسالة الاستجابة
-     * Response message
-     */
     @Schema(description = "رسالة الاستجابة / Response message", example = "تم إنشاء المنتج بنجاح")
     private String message;
     
-    /**
-     * رسالة الاستجابة بالعربية
-     * Response message in Arabic
-     */
     @Schema(description = "رسالة الاستجابة بالعربية / Response message in Arabic")
     private String messageAr;
     
-    /**
-     * البيانات المرجعة
-     * Returned data
-     */
     @Schema(description = "البيانات المرجعة / Returned data")
     private T data;
     
-    /**
-     * تفاصيل الأخطاء إن وجدت
-     * Error details if any
-     */
     @Schema(description = "تفاصيل الأخطاء / Error details")
     private Object errors;
     
-    /**
-     * رمز الحالة
-     * Status code
-     */
     @Schema(description = "رمز الحالة / Status code", example = "200")
     private int statusCode;
     
-    /**
-     * وقت الاستجابة
-     * Response timestamp
-     */
     @Schema(description = "وقت الاستجابة / Response timestamp")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime timestamp;
     
-    /**
-     * معرف الطلب لتتبع العمليات
-     * Request ID for operation tracking
-     */
     @Schema(description = "معرف الطلب للتتبع / Request ID for tracking")
     private String requestId;
     
-    /**
-     * معلومات إضافية اختيارية
-     * Optional additional metadata
-     */
     @Schema(description = "معلومات إضافية / Additional metadata")
     private Object metadata;
     
     // ===============================
-    // Constructors
+    // Constructors - مع الحفاظ على التوافق
     // ===============================
     
     /**
      * Constructor افتراضي
-     * Default constructor
      */
     public ApiResponse() {
         this.timestamp = LocalDateTime.now();
     }
     
     /**
-     * Constructor للاستجابة الناجحة
-     * Constructor for successful response
-     * 
-     * @param data البيانات المرجعة
-     * @param message رسالة النجاح
-     * @param statusCode رمز الحالة
+     * Constructor الأساسي المُستخدم في الكود الحالي
+     * التوقيع: (success, message, messageAr, data)
+     */
+    public ApiResponse(boolean success, String message, String messageAr, T data) {
+        this();
+        this.success = success;
+        this.message = message;
+        this.messageAr = messageAr;
+        this.data = data;
+        this.statusCode = success ? 200 : 400;
+    }
+    
+    /**
+     * Constructor للاستجابة الناجحة مع البيانات
+     * التوقيع: (data, message, statusCode)
      */
     public ApiResponse(T data, String message, int statusCode) {
         this();
@@ -9981,16 +12229,26 @@ public class ApiResponse<T> {
     
     /**
      * Constructor للاستجابة الفاشلة
-     * Constructor for error response
-     * 
-     * @param message رسالة الخطأ
-     * @param errors تفاصيل الأخطاء
-     * @param statusCode رمز الحالة
+     * التوقيع: (message, errors, statusCode)
      */
     public ApiResponse(String message, Object errors, int statusCode) {
         this();
         this.success = false;
         this.message = message;
+        this.errors = errors;
+        this.statusCode = statusCode;
+    }
+    
+    /**
+     * Constructor كامل مع جميع المعاملات
+     * التوقيع: (success, message, messageAr, data, errors, statusCode)
+     */
+    public ApiResponse(boolean success, String message, String messageAr, T data, Object errors, int statusCode) {
+        this();
+        this.success = success;
+        this.message = message;
+        this.messageAr = messageAr;
+        this.data = data;
         this.errors = errors;
         this.statusCode = statusCode;
     }
@@ -10001,11 +12259,6 @@ public class ApiResponse<T> {
     
     /**
      * إنشاء استجابة ناجحة
-     * Create successful response
-     * 
-     * @param <T> نوع البيانات
-     * @param data البيانات
-     * @return ApiResponse<T>
      */
     public static <T> ApiResponse<T> success(T data) {
         return new ApiResponse<>(data, "Operation completed successfully", 200);
@@ -10013,12 +12266,6 @@ public class ApiResponse<T> {
     
     /**
      * إنشاء استجابة ناجحة مع رسالة مخصصة
-     * Create successful response with custom message
-     * 
-     * @param <T> نوع البيانات
-     * @param data البيانات
-     * @param message رسالة النجاح
-     * @return ApiResponse<T>
      */
     public static <T> ApiResponse<T> success(T data, String message) {
         return new ApiResponse<>(data, message, 200);
@@ -10026,13 +12273,6 @@ public class ApiResponse<T> {
     
     /**
      * إنشاء استجابة ناجحة مع رسالة مخصصة ورمز حالة
-     * Create successful response with custom message and status code
-     * 
-     * @param <T> نوع البيانات
-     * @param data البيانات
-     * @param message رسالة النجاح
-     * @param statusCode رمز الحالة
-     * @return ApiResponse<T>
      */
     public static <T> ApiResponse<T> success(T data, String message, int statusCode) {
         return new ApiResponse<>(data, message, statusCode);
@@ -10040,11 +12280,6 @@ public class ApiResponse<T> {
     
     /**
      * إنشاء استجابة فاشلة
-     * Create error response
-     * 
-     * @param <T> نوع البيانات
-     * @param message رسالة الخطأ
-     * @return ApiResponse<T>
      */
     public static <T> ApiResponse<T> error(String message) {
         return new ApiResponse<>(message, null, 400);
@@ -10052,12 +12287,6 @@ public class ApiResponse<T> {
     
     /**
      * إنشاء استجابة فاشلة مع تفاصيل الأخطاء
-     * Create error response with error details
-     * 
-     * @param <T> نوع البيانات
-     * @param message رسالة الخطأ
-     * @param errors تفاصيل الأخطاء
-     * @return ApiResponse<T>
      */
     public static <T> ApiResponse<T> error(String message, Object errors) {
         return new ApiResponse<>(message, errors, 400);
@@ -10065,13 +12294,6 @@ public class ApiResponse<T> {
     
     /**
      * إنشاء استجابة فاشلة مع رمز حالة مخصص
-     * Create error response with custom status code
-     * 
-     * @param <T> نوع البيانات
-     * @param message رسالة الخطأ
-     * @param errors تفاصيل الأخطاء
-     * @param statusCode رمز الحالة
-     * @return ApiResponse<T>
      */
     public static <T> ApiResponse<T> error(String message, Object errors, int statusCode) {
         return new ApiResponse<>(message, errors, statusCode);
@@ -10079,11 +12301,6 @@ public class ApiResponse<T> {
     
     /**
      * إنشاء استجابة للمورد غير الموجود
-     * Create not found response
-     * 
-     * @param <T> نوع البيانات
-     * @param message رسالة عدم الوجود
-     * @return ApiResponse<T>
      */
     public static <T> ApiResponse<T> notFound(String message) {
         return new ApiResponse<>(message, null, 404);
@@ -10091,11 +12308,6 @@ public class ApiResponse<T> {
     
     /**
      * إنشاء استجابة للوصول المرفوض
-     * Create forbidden response
-     * 
-     * @param <T> نوع البيانات
-     * @param message رسالة الرفض
-     * @return ApiResponse<T>
      */
     public static <T> ApiResponse<T> forbidden(String message) {
         return new ApiResponse<>(message, null, 403);
@@ -10103,11 +12315,6 @@ public class ApiResponse<T> {
     
     /**
      * إنشاء استجابة للطلب غير المصرح به
-     * Create unauthorized response
-     * 
-     * @param <T> نوع البيانات
-     * @param message رسالة عدم التصريح
-     * @return ApiResponse<T>
      */
     public static <T> ApiResponse<T> unauthorized(String message) {
         return new ApiResponse<>(message, null, 401);
@@ -10117,23 +12324,10 @@ public class ApiResponse<T> {
     // Builder Pattern
     // ===============================
     
-    /**
-     * بناء استجابة مخصصة
-     * Build custom response
-     * 
-     * @param <T> نوع البيانات
-     * @return Builder<T>
-     */
     public static <T> Builder<T> builder() {
         return new Builder<>();
     }
     
-    /**
-     * فئة البناء للاستجابة
-     * Response builder class
-     * 
-     * @param <T> نوع البيانات
-     */
     public static class Builder<T> {
         private final ApiResponse<T> response;
         
@@ -10190,22 +12384,10 @@ public class ApiResponse<T> {
     // Utility Methods
     // ===============================
     
-    /**
-     * التحقق من وجود أخطاء
-     * Check if there are errors
-     * 
-     * @return boolean
-     */
     public boolean hasErrors() {
         return errors != null;
     }
     
-    /**
-     * التحقق من وجود بيانات
-     * Check if data exists
-     * 
-     * @return boolean
-     */
     public boolean hasData() {
         return data != null;
     }
@@ -10214,25 +12396,8 @@ public class ApiResponse<T> {
     // Getters and Setters
     // ===============================
     
-    /**
-     * التحقق من نجاح العملية وتعديل الحالة
-     * Check operation success and modify state
-     * 
-     * @return boolean حالة النجاح
-     */
-    public boolean isSuccess() { 
-        return success; 
-    }
-    
-    /**
-     * تعديل حالة النجاح
-     * Set success state
-     * 
-     * @param success حالة النجاح الجديدة
-     */
-    public void setSuccess(boolean success) { 
-        this.success = success; 
-    }
+    public boolean isSuccess() { return success; }
+    public void setSuccess(boolean success) { this.success = success; }
     
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }
@@ -10258,10 +12423,6 @@ public class ApiResponse<T> {
     public Object getMetadata() { return metadata; }
     public void setMetadata(Object metadata) { this.metadata = metadata; }
     
-    // ===============================
-    // toString Method
-    // ===============================
-    
     @Override
     public String toString() {
         return "ApiResponse{" +
@@ -10282,10 +12443,66 @@ public class ApiResponse<T> {
 
 /* ---- File: src/main/java/com/ecommerce/multistore/shared/dto/ErrorResponse.java ---- */
 
+
+/* ---- File: src/main/java/com/ecommerce/multistore/shared/dto/ErrorResponse.java ---- */
+
 package com.ecommerce.multistore.shared.dto;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * استجابة الأخطاء الموحدة
+ * Unified Error Response
+ */
 public class ErrorResponse {
-    
+
+    private String error;
+    private String message;
+    private String messageAr;
+    private int status;
+    private String path;
+    private LocalDateTime timestamp;
+    private List<String> details;
+
+    public ErrorResponse() {
+        this.timestamp = LocalDateTime.now();
+    }
+
+    public ErrorResponse(String error, String message, int status, String path) {
+        this();
+        this.error = error;
+        this.message = message;
+        this.status = status;
+        this.path = path;
+    }
+
+    public ErrorResponse(String error, String message, String messageAr, int status, String path) {
+        this(error, message, status, path);
+        this.messageAr = messageAr;
+    }
+
+    // Getters and Setters
+    public String getError() { return error; }
+    public void setError(String error) { this.error = error; }
+
+    public String getMessage() { return message; }
+    public void setMessage(String message) { this.message = message; }
+
+    public String getMessageAr() { return messageAr; }
+    public void setMessageAr(String messageAr) { this.messageAr = messageAr; }
+
+    public int getStatus() { return status; }
+    public void setStatus(int status) { this.status = status; }
+
+    public String getPath() { return path; }
+    public void setPath(String path) { this.path = path; }
+
+    public LocalDateTime getTimestamp() { return timestamp; }
+    public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
+
+    public List<String> getDetails() { return details; }
+    public void setDetails(List<String> details) { this.details = details; }
 }
 
 
@@ -12765,20 +14982,117 @@ public class ResourceNotFoundException extends RuntimeException {
 
 /* ---- File: src/main/java/com/ecommerce/multistore/shared/exception/ValidationException.java ---- */
 
+
+/* ---- File: src/main/java/com/ecommerce/multistore/shared/exception/ValidationException.java ---- */
+
 package com.ecommerce.multistore.shared.exception;
 
-public class ValidationException {
-    
+import java.util.List;
+
+/**
+ * استثناء التحقق من الصحة
+ * Validation Exception
+ */
+public class ValidationException extends RuntimeException {
+
+    private final List<String> errors;
+
+    public ValidationException(String message) {
+        super(message);
+        this.errors = List.of(message);
+    }
+
+    public ValidationException(String message, List<String> errors) {
+        super(message);
+        this.errors = errors;
+    }
+
+    public ValidationException(List<String> errors) {
+        super("Validation failed");
+        this.errors = errors;
+    }
+
+    public List<String> getErrors() {
+        return errors;
+    }
 }
 
 
 
 /* ---- File: src/main/java/com/ecommerce/multistore/shared/security/ApiKeyAuthFilter.java ---- */
 
+
+/* ---- File: src/main/java/com/ecommerce/multistore/shared/security/ApiKeyAuthFilter.java ---- */
+
 package com.ecommerce.multistore.shared.security;
 
-public class ApiKeyAuthFilter {
+import com.ecommerce.multistore.shared.constants.AppConstants;
+import com.ecommerce.multistore.shared.dto.ApiResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+
+/**
+ * مرشح مصادقة مفتاح API
+ * API Key Authentication Filter
+ */
+@Component
+public class ApiKeyAuthFilter extends OncePerRequestFilter {
+
+    @Value("${app.api.key:default-api-key}")
+    private String validApiKey;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, 
+                                  HttpServletResponse response, 
+                                  FilterChain filterChain) throws ServletException, IOException {
+
+        String requestPath = request.getRequestURI();
+
+        // تخطي المسارات العامة
+        if (isPublicPath(requestPath)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String apiKey = request.getHeader(AppConstants.API_KEY_HEADER);
+
+       if (apiKey == null || !validApiKey.equals(apiKey)) {
+    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    response.setContentType("application/json");
+    response.setCharacterEncoding("UTF-8");
     
+    // استخدام ApiResponse للتنسيق الموحد
+    ApiResponse<Void> errorResponse = ApiResponse.unauthorized("Invalid API Key");
+    errorResponse.setMessageAr("مفتاح API غير صحيح");
+    
+    // تحويل إلى JSON
+    ObjectMapper objectMapper = new ObjectMapper();
+    String jsonString = objectMapper.writeValueAsString(errorResponse);
+    
+    response.getWriter().write(jsonString);
+    return;
+}
+
+
+        filterChain.doFilter(request, response);
+    }
+
+    private boolean isPublicPath(String path) {
+        return path.startsWith("/api/v1/auth/") ||
+               path.startsWith("/swagger-ui/") ||
+               path.startsWith("/v3/api-docs") ||
+               path.equals("/health") ||
+               path.equals("/actuator/health");
+    }
 }
 
 
@@ -12787,18 +15101,326 @@ public class ApiKeyAuthFilter {
 
 package com.ecommerce.multistore.shared.security;
 
-public class RateLimitingFilter {
-    
+import com.ecommerce.multistore.shared.constants.AppConstants;
+import com.ecommerce.multistore.shared.dto.ApiResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * مرشح تحديد معدل الطلبات
+ * Rate Limiting Filter
+ * 
+ * يحد من عدد الطلبات المسموح بها لكل عميل في فترة زمنية محددة
+ * Limits the number of requests allowed per client in a specified time window
+ * 
+ * @author Multi-Store Team
+ * @version 1.0
+ * @since 2024-01-01
+ */
+@Component
+public class RateLimitingFilter extends OncePerRequestFilter {
+
+    private final ConcurrentHashMap<String, RateLimitInfo> rateLimitMap = new ConcurrentHashMap<>();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, 
+                                  HttpServletResponse response, 
+                                  FilterChain filterChain) throws ServletException, IOException {
+
+        String clientIp = getClientIpAddress(request);
+        RateLimitInfo rateLimitInfo = rateLimitMap.computeIfAbsent(clientIp, k -> new RateLimitInfo());
+
+        if (isRateLimitExceeded(rateLimitInfo)) {
+            handleRateLimitExceeded(response, rateLimitInfo);
+            return;
+        }
+
+        rateLimitInfo.incrementRequests();
+        
+        // إضافة Rate Limit headers للطلبات الناجحة
+        addRateLimitHeaders(response, rateLimitInfo);
+        
+        filterChain.doFilter(request, response);
+    }
+
+    /**
+     * معالجة تجاوز حد الطلبات
+     * Handle rate limit exceeded
+     */
+    private void handleRateLimitExceeded(HttpServletResponse response, RateLimitInfo rateLimitInfo) throws IOException {
+        // إعداد response status وheaders
+        response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        
+        // حساب وقت إعادة التعيين
+        long resetTimeMillis = System.currentTimeMillis() + (AppConstants.RATE_LIMIT_WINDOW_MINUTES * 60 * 1000);
+        int retryAfterSeconds = AppConstants.RATE_LIMIT_WINDOW_MINUTES * 60;
+        
+        // إضافة Rate Limit headers حسب RFC 6585
+        response.setHeader("X-RateLimit-Limit", String.valueOf(AppConstants.RATE_LIMIT_REQUESTS));
+        response.setHeader("X-RateLimit-Remaining", "0");
+        response.setHeader("X-RateLimit-Reset", String.valueOf(resetTimeMillis));
+        response.setHeader("Retry-After", String.valueOf(retryAfterSeconds));
+        
+        // إنشاء response موحد
+        ApiResponse<Map<String, Object>> errorResponse = ApiResponse.error(
+            "Rate limit exceeded",
+            Map.of(
+                "limit", AppConstants.RATE_LIMIT_REQUESTS,
+                "windowMinutes", AppConstants.RATE_LIMIT_WINDOW_MINUTES,
+                "retryAfterSeconds", retryAfterSeconds,
+                "resetTime", resetTimeMillis,
+                "currentRequests", rateLimitInfo.getRequestCount()
+            ),
+            HttpStatus.TOO_MANY_REQUESTS.value()
+        );
+        errorResponse.setMessageAr("تم تجاوز حد الطلبات المسموح");
+        
+        // تحويل إلى JSON وإرسال
+        response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+    }
+
+    /**
+     * إضافة Rate Limit headers للطلبات الناجحة
+     * Add rate limit headers for successful requests
+     */
+    private void addRateLimitHeaders(HttpServletResponse response, RateLimitInfo rateLimitInfo) {
+        int remainingRequests = Math.max(0, AppConstants.RATE_LIMIT_REQUESTS - rateLimitInfo.getRequestCount());
+        long resetTimeMillis = System.currentTimeMillis() + (AppConstants.RATE_LIMIT_WINDOW_MINUTES * 60 * 1000);
+        
+        response.setHeader("X-RateLimit-Limit", String.valueOf(AppConstants.RATE_LIMIT_REQUESTS));
+        response.setHeader("X-RateLimit-Remaining", String.valueOf(remainingRequests));
+        response.setHeader("X-RateLimit-Reset", String.valueOf(resetTimeMillis));
+    }
+
+    /**
+     * الحصول على عنوان IP الخاص بالعميل
+     * Get client IP address
+     */
+    private String getClientIpAddress(HttpServletRequest request) {
+        // التحقق من X-Forwarded-For header (للـ proxy servers)
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        
+        // التحقق من X-Real-IP header
+        String xRealIp = request.getHeader("X-Real-IP");
+        if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
+            return xRealIp;
+        }
+        
+        // التحقق من X-Forwarded-For header (Cloudflare)
+        String cfConnectingIp = request.getHeader("CF-Connecting-IP");
+        if (cfConnectingIp != null && !cfConnectingIp.isEmpty() && !"unknown".equalsIgnoreCase(cfConnectingIp)) {
+            return cfConnectingIp;
+        }
+        
+        // استخدام الـ IP الافتراضي
+        return request.getRemoteAddr();
+    }
+
+    /**
+     * التحقق من تجاوز حد الطلبات
+     * Check if rate limit is exceeded
+     */
+    private boolean isRateLimitExceeded(RateLimitInfo rateLimitInfo) {
+        LocalDateTime now = LocalDateTime.now();
+
+        // إعادة تعيين العداد إذا انتهت النافذة الزمنية
+        if (now.isAfter(rateLimitInfo.getWindowStart().plusMinutes(AppConstants.RATE_LIMIT_WINDOW_MINUTES))) {
+            rateLimitInfo.reset(now);
+        }
+
+        return rateLimitInfo.getRequestCount() >= AppConstants.RATE_LIMIT_REQUESTS;
+    }
+
+    /**
+     * تنظيف البيانات المنتهية الصلاحية
+     * Clean up expired entries
+     */
+    private void cleanupExpiredEntries() {
+        LocalDateTime cutoffTime = LocalDateTime.now().minusMinutes(AppConstants.RATE_LIMIT_WINDOW_MINUTES * 2);
+        
+        rateLimitMap.entrySet().removeIf(entry -> 
+            entry.getValue().getWindowStart().isBefore(cutoffTime)
+        );
+    }
+
+    /**
+     * معلومات تحديد معدل الطلبات
+     * Rate limit information
+     */
+    private static class RateLimitInfo {
+        private AtomicInteger requestCount = new AtomicInteger(0);
+        private volatile LocalDateTime windowStart = LocalDateTime.now();
+
+        /**
+         * زيادة عدد الطلبات
+         * Increment request count
+         */
+        public void incrementRequests() {
+            requestCount.incrementAndGet();
+        }
+
+        /**
+         * إعادة تعيين العداد
+         * Reset counter
+         */
+        public void reset(LocalDateTime newWindowStart) {
+            requestCount.set(0);
+            windowStart = newWindowStart;
+        }
+
+        /**
+         * الحصول على عدد الطلبات الحالي
+         * Get current request count
+         */
+        public int getRequestCount() {
+            return requestCount.get();
+        }
+
+        /**
+         * الحصول على بداية النافذة الزمنية
+         * Get window start time
+         */
+        public LocalDateTime getWindowStart() {
+            return windowStart;
+        }
+
+        /**
+         * الحصول على الطلبات المتبقية
+         * Get remaining requests
+         */
+        public int getRemainingRequests() {
+            return Math.max(0, AppConstants.RATE_LIMIT_REQUESTS - requestCount.get());
+        }
+
+        /**
+         * التحقق من انتهاء النافذة الزمنية
+         * Check if window has expired
+         */
+        public boolean isWindowExpired() {
+            return LocalDateTime.now().isAfter(windowStart.plusMinutes(AppConstants.RATE_LIMIT_WINDOW_MINUTES));
+        }
+    }
 }
 
 
 
 /* ---- File: src/main/java/com/ecommerce/multistore/shared/security/SecurityUtils.java ---- */
 
+/* ---- File: src/main/java/com/ecommerce/multistore/shared/security/SecurityUtils.java ---- */
+
 package com.ecommerce.multistore.shared.security;
 
-public class SecurityUtils {
-    
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.security.SecureRandom;
+import java.util.Base64;
+import java.util.UUID;
+
+/**
+ * أدوات الأمان المساعدة
+ * Security Utilities
+ */
+public final class SecurityUtils {
+
+    private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private static final SecureRandom secureRandom = new SecureRandom();
+
+    private SecurityUtils() {
+        // Utility class
+    }
+
+    /**
+     * تشفير كلمة المرور
+     * Encode password
+     */
+    public static String encodePassword(String rawPassword) {
+        return passwordEncoder.encode(rawPassword);
+    }
+
+    /**
+     * التحقق من كلمة المرور
+     * Verify password
+     */
+    public static boolean verifyPassword(String rawPassword, String encodedPassword) {
+        return passwordEncoder.matches(rawPassword, encodedPassword);
+    }
+
+    /**
+     * الحصول على المستخدم الحالي
+     * Get current user
+     */
+    public static String getCurrentUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            return authentication.getName();
+        }
+        return null;
+    }
+
+    /**
+     * توليد رمز عشوائي آمن
+     * Generate secure random token
+     */
+    public static String generateSecureToken() {
+        byte[] randomBytes = new byte[32];
+        secureRandom.nextBytes(randomBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+    }
+
+    /**
+     * توليد مفتاح API
+     * Generate API key
+     */
+    public static String generateApiKey() {
+        return "msk_" + UUID.randomUUID().toString().replace("-", "");
+    }
+
+    /**
+     * التحقق من صحة البريد الإلكتروني
+     * Validate email format
+     */
+    public static boolean isValidEmail(String email) {
+        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    }
+
+    /**
+     * التحقق من قوة كلمة المرور
+     * Validate password strength
+     */
+    public static boolean isStrongPassword(String password) {
+        if (password == null || password.length() < 8) {
+            return false;
+        }
+
+        boolean hasUpper = password.chars().anyMatch(Character::isUpperCase);
+        boolean hasLower = password.chars().anyMatch(Character::isLowerCase);
+        boolean hasDigit = password.chars().anyMatch(Character::isDigit);
+        boolean hasSpecial = password.chars().anyMatch(ch -> "!@#$%^&*()_+-=[]{}|;:,.<>?".indexOf(ch) >= 0);
+
+        return hasUpper && hasLower && hasDigit && hasSpecial;
+    }
 }
 
 
@@ -12807,8 +15429,179 @@ public class SecurityUtils {
 
 package com.ecommerce.multistore.shared.utils;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import com.ecommerce.multistore.shared.constants.AppConstants;
+
+/**
+ * أدوات التصفح والترقيم
+ * Pagination Utilities
+ */
 public class PaginationUtils {
     
+    /**
+     * إنشاء Pageable مع معاملات افتراضية
+     */
+    public static Pageable createPageable(Integer page, Integer size, String sortBy, String sortDir) {
+        // تطبيق القيم الافتراضية
+        int pageNumber = (page != null && page >= 0) ? page : 0;
+        int pageSize = (size != null && size > 0) ? 
+            Math.min(size, AppConstants.MAX_PAGE_SIZE) : AppConstants.DEFAULT_PAGE_SIZE;
+        
+        String sortField = (sortBy != null && !sortBy.trim().isEmpty()) ? 
+            sortBy : AppConstants.DEFAULT_SORT_BY;
+        
+        Sort.Direction direction = Sort.Direction.DESC;
+        if (sortDir != null && sortDir.equalsIgnoreCase("asc")) {
+            direction = Sort.Direction.ASC;
+        }
+        
+        Sort sort = Sort.by(direction, sortField);
+        
+        return PageRequest.of(pageNumber, pageSize, sort);
+    }
+    
+    /**
+     * إنشاء Pageable بسيط
+     */
+    public static Pageable createSimplePageable(int page, int size) {
+        return PageRequest.of(page, size);
+    }
+    
+    /**
+     * إنشاء Pageable مع ترتيب
+     */
+    public static Pageable createPageableWithSort(int page, int size, String sortBy) {
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy));
+    }
+    
+    /**
+     * إنشاء Pageable مع ترتيب تصاعدي
+     */
+    public static Pageable createPageableAsc(int page, int size, String sortBy) {
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, sortBy));
+    }
+    
+    /**
+     * إنشاء Pageable مع ترتيب تنازلي
+     */
+    public static Pageable createPageableDesc(int page, int size, String sortBy) {
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortBy));
+    }
+    
+    /**
+     * إنشاء Pageable مع ترتيب متعدد
+     */
+    public static Pageable createPageableWithMultipleSort(int page, int size, String... sortFields) {
+        Sort sort = Sort.by(Sort.Direction.DESC, sortFields);
+        return PageRequest.of(page, size, sort);
+    }
+    
+    /**
+     * التحقق من صحة معاملات التصفح
+     */
+    public static boolean isValidPaginationParams(Integer page, Integer size) {
+        return (page == null || page >= 0) && 
+               (size == null || (size > 0 && size <= AppConstants.MAX_PAGE_SIZE));
+    }
+    
+    /**
+     * حساب العدد الإجمالي للصفحات
+     */
+    public static int calculateTotalPages(long totalElements, int pageSize) {
+        if (pageSize <= 0) {
+            return 0;
+        }
+        return (int) Math.ceil((double) totalElements / pageSize);
+    }
+    
+    /**
+     * حساب رقم العنصر الأول في الصفحة
+     */
+    public static long calculateFirstElement(int page, int size) {
+        return (long) page * size + 1;
+    }
+    
+    /**
+     * حساب رقم العنصر الأخير في الصفحة
+     */
+    public static long calculateLastElement(int page, int size, long totalElements) {
+        long lastElement = (long) (page + 1) * size;
+        return Math.min(lastElement, totalElements);
+    }
+    
+    /**
+     * التحقق من وجود صفحة سابقة
+     */
+    public static boolean hasPrevious(int page) {
+        return page > 0;
+    }
+    
+    /**
+     * التحقق من وجود صفحة تالية
+     */
+    public static boolean hasNext(int page, int size, long totalElements) {
+        int totalPages = calculateTotalPages(totalElements, size);
+        return page < totalPages - 1;
+    }
+    
+    /**
+     * إنشاء معلومات تفصيلية عن التصفح
+     */
+    public static PaginationInfo createPaginationInfo(int page, int size, long totalElements) {
+        int totalPages = calculateTotalPages(totalElements, size);
+        long firstElement = calculateFirstElement(page, size);
+        long lastElement = calculateLastElement(page, size, totalElements);
+        
+        return new PaginationInfo(
+            page,
+            size,
+            totalPages,
+            totalElements,
+            firstElement,
+            lastElement,
+            hasPrevious(page),
+            hasNext(page, size, totalElements)
+        );
+    }
+    
+    /**
+     * معلومات التصفح
+     */
+    public static class PaginationInfo {
+        private final int currentPage;
+        private final int pageSize;
+        private final int totalPages;
+        private final long totalElements;
+        private final long firstElement;
+        private final long lastElement;
+        private final boolean hasPrevious;
+        private final boolean hasNext;
+        
+        public PaginationInfo(int currentPage, int pageSize, int totalPages, 
+                            long totalElements, long firstElement, long lastElement,
+                            boolean hasPrevious, boolean hasNext) {
+            this.currentPage = currentPage;
+            this.pageSize = pageSize;
+            this.totalPages = totalPages;
+            this.totalElements = totalElements;
+            this.firstElement = firstElement;
+            this.lastElement = lastElement;
+            this.hasPrevious = hasPrevious;
+            this.hasNext = hasNext;
+        }
+        
+        // Getters
+        public int getCurrentPage() { return currentPage; }
+        public int getPageSize() { return pageSize; }
+        public int getTotalPages() { return totalPages; }
+        public long getTotalElements() { return totalElements; }
+        public long getFirstElement() { return firstElement; }
+        public long getLastElement() { return lastElement; }
+        public boolean isHasPrevious() { return hasPrevious; }
+        public boolean isHasNext() { return hasNext; }
+    }
 }
 
 
@@ -12817,20 +15610,370 @@ public class PaginationUtils {
 
 package com.ecommerce.multistore.shared.utils;
 
+import java.text.Normalizer;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+
+/**
+ * مولد الـ Slug - تحويل النصوص إلى URLs صديقة للمتصفح
+ * Slug Generator - Convert text to URL-friendly format
+ * 
+ * @author Multi-Store Team
+ * @version 1.0
+ * @since 2024-01-01
+ */
 public class SlugGenerator {
     
+    // Pattern للأحرف غير اللاتينية - مُصحح
+    private static final Pattern NON_LATIN = Pattern.compile("[^\\w-]");
+    
+    // Pattern للمسافات المتعددة - مُصحح
+    private static final Pattern WHITESPACE = Pattern.compile("[\\s]+");
+    
+    // Pattern للشرطات المتعددة - مُصحح
+    private static final Pattern MULTIPLE_DASHES = Pattern.compile("-{2,}");
+    
+    // Pattern للشرطات في البداية والنهاية - مُصحح
+    private static final Pattern EDGE_DASHES = Pattern.compile("^-|-$");
+    
+    /**
+     * تحويل النص إلى slug
+     * Convert text to slug
+     */
+    public static String generateSlug(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return "";
+        }
+        
+        String slug = input.trim().toLowerCase();
+        
+        // تطبيع النص لإزالة العلامات التشكيلية - مُصحح
+        slug = Normalizer.normalize(slug, Normalizer.Form.NFD);
+        slug = slug.replaceAll("[\\p{InCombiningDiacriticalMarks}]", "");
+        
+        // استبدال المسافات بشرطات
+        slug = WHITESPACE.matcher(slug).replaceAll("-");
+        
+        // إزالة الأحرف غير المسموحة
+        slug = NON_LATIN.matcher(slug).replaceAll("");
+        
+        // إزالة الشرطات المتعددة
+        slug = MULTIPLE_DASHES.matcher(slug).replaceAll("-");
+        
+        // إزالة الشرطات من البداية والنهاية
+        slug = EDGE_DASHES.matcher(slug).replaceAll("");
+        
+        return slug;
+    }
+    
+
+    /**
+ * إنشاء slug فريد باستخدام checker function
+ * Generate unique slug using checker function
+ * 
+ * @param input النص الأصلي
+ * @param existsChecker دالة للتحقق من وجود الـ slug
+ * @return slug فريد
+ */
+public static String generateUniqueSlug(String input, Function<String, Boolean> existsChecker) {
+    String baseSlug = generateSlug(input);
+    
+    if (!existsChecker.apply(baseSlug)) {
+        return baseSlug;
+    }
+    
+    int counter = 1;
+    String uniqueSlug;
+    do {
+        counter++;
+        uniqueSlug = baseSlug + "-" + counter;
+    } while (existsChecker.apply(uniqueSlug));
+    
+    return uniqueSlug;
 }
 
+    /**
+     * تحويل النص العربي إلى slug
+     */
+    public static String generateArabicSlug(String arabicText) {
+        if (arabicText == null || arabicText.trim().isEmpty()) {
+            return "";
+        }
+        
+        String transliterated = transliterateArabic(arabicText);
+        return generateSlug(transliterated);
+    }
+    
+    /**
+     * تحويل الأحرف العربية إلى لاتينية
+     */
+    private static String transliterateArabic(String arabic) {
+        return arabic
+            .replaceAll("ا", "a")
+            .replaceAll("ب", "b")
+            .replaceAll("ت", "t")
+            .replaceAll("ث", "th")
+            .replaceAll("ج", "j")
+            .replaceAll("ح", "h")
+            .replaceAll("خ", "kh")
+            .replaceAll("د", "d")
+            .replaceAll("ذ", "dh")
+            .replaceAll("ر", "r")
+            .replaceAll("ز", "z")
+            .replaceAll("س", "s")
+            .replaceAll("ش", "sh")
+            .replaceAll("ص", "s")
+            .replaceAll("ض", "d")
+            .replaceAll("ط", "t")
+            .replaceAll("ظ", "z")
+            .replaceAll("ع", "a")
+            .replaceAll("غ", "gh")
+            .replaceAll("ف", "f")
+            .replaceAll("ق", "q")
+            .replaceAll("ك", "k")
+            .replaceAll("ل", "l")
+            .replaceAll("م", "m")
+            .replaceAll("ن", "n")
+            .replaceAll("ه", "h")
+            .replaceAll("و", "w")
+            .replaceAll("ي", "y")
+            .replaceAll("ى", "a")
+            .replaceAll("ة", "h")
+            .replaceAll("ء", "");
+    }
+    
+    /**
+     * التحقق من صحة الـ slug
+     */
+    public static boolean isValidSlug(String slug) {
+        if (slug == null || slug.isEmpty()) {
+            return false;
+        }
+        
+        Pattern validSlugPattern = Pattern.compile("^[a-z0-9]+(?:-[a-z0-9]+)*$");
+        return validSlugPattern.matcher(slug).matches();
+    }
+    
+    /**
+     * إنشاء slug فريد بإضافة رقم
+     */
+    public static String generateUniqueSlug(String baseSlug, int counter) {
+        if (counter <= 1) {
+            return baseSlug;
+        }
+        return baseSlug + "-" + counter;
+    }
+    
+    /**
+     * تقصير الـ slug إلى طول محدد
+     */
+    public static String truncateSlug(String slug, int maxLength) {
+        if (slug == null || slug.length() <= maxLength) {
+            return slug;
+        }
+        
+        String truncated = slug.substring(0, maxLength);
+        
+        if (truncated.endsWith("-")) {
+            truncated = truncated.substring(0, truncated.length() - 1);
+        }
+        
+        return truncated;
+    }
+}
 
 
 /* ---- File: src/main/java/com/ecommerce/multistore/shared/utils/ValidationUtils.java ---- */
 
 package com.ecommerce.multistore.shared.utils;
 
+import java.util.regex.Pattern;
+
+/**
+ * أدوات التحقق من صحة البيانات
+ * Validation Utilities
+ */
 public class ValidationUtils {
     
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+        "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+    );
+    
+    private static final Pattern PHONE_PATTERN = Pattern.compile(
+        "^(\\+967|967|0)?[1-9][0-9]{7,8}$"
+    );
+    
+    private static final Pattern STRONG_PASSWORD_PATTERN = Pattern.compile(
+        "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"
+    );
+    
+    /**
+     * التحقق من صحة البريد الإلكتروني
+     */
+    public static boolean isValidEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return false;
+        }
+        return EMAIL_PATTERN.matcher(email.trim()).matches();
+    }
+    
+    /**
+     * التحقق من صحة رقم الهاتف اليمني
+     */
+    public static boolean isValidYemeniPhone(String phone) {
+        if (phone == null || phone.trim().isEmpty()) {
+            return false;
+        }
+        return PHONE_PATTERN.matcher(phone.trim()).matches();
+    }
+    
+    /**
+     * التحقق من قوة كلمة المرور
+     */
+    public static boolean isStrongPassword(String password) {
+        if (password == null || password.length() < 8) {
+            return false;
+        }
+        return STRONG_PASSWORD_PATTERN.matcher(password).matches();
+    }
+    
+    /**
+     * التحقق من صحة الـ SKU
+     */
+    public static boolean isValidSku(String sku) {
+        if (sku == null || sku.trim().isEmpty()) {
+            return false;
+        }
+        
+        String cleaned = sku.trim().toUpperCase();
+        return cleaned.matches("^[A-Z0-9-]{3,50}$");
+    }
+    
+    /**
+     * التحقق من صحة الرقم الضريبي
+     */
+    public static boolean isValidTaxNumber(String taxNumber) {
+        if (taxNumber == null || taxNumber.trim().isEmpty()) {
+            return false;
+        }
+        
+        String cleaned = taxNumber.replaceAll("[^0-9]", "");
+        return cleaned.length() >= 9 && cleaned.length() <= 15;
+    }
+    
+    /**
+     * تنظيف رقم الهاتف
+     */
+    public static String normalizePhone(String phone) {
+        if (phone == null) {
+            return null;
+        }
+        
+        String cleaned = phone.replaceAll("[^0-9+]", "");
+        
+        if (cleaned.startsWith("+967")) {
+            return cleaned;
+        } else if (cleaned.startsWith("967")) {
+            return "+" + cleaned;
+        } else if (cleaned.startsWith("0")) {
+            return "+967" + cleaned.substring(1);
+        }
+        
+        return "+967" + cleaned;
+    }
+    
+    /**
+     * التحقق من صحة السعر
+     */
+    public static boolean isValidPrice(Double price) {
+        return price != null && price > 0 && price <= 999999.99;
+    }
+    
+    /**
+     * التحقق من صحة الكمية
+     */
+    public static boolean isValidQuantity(Integer quantity) {
+        return quantity != null && quantity >= 0 && quantity <= 999999;
+    }
+    
+    /**
+     * التحقق من صحة الخصم
+     */
+    public static boolean isValidDiscount(Double discount) {
+        return discount != null && discount >= 0 && discount <= 100;
+    }
+    
+    /**
+     * التحقق من صحة الرمز البريدي
+     */
+    public static boolean isValidPostalCode(String postalCode) {
+        if (postalCode == null || postalCode.trim().isEmpty()) {
+            return true; // Optional field
+        }
+        
+        String cleaned = postalCode.trim();
+        return cleaned.matches("^[0-9]{4,10}$");
+    }
+    
+    /**
+     * التحقق من صحة رقم التتبع
+     */
+    public static boolean isValidTrackingNumber(String trackingNumber) {
+        if (trackingNumber == null || trackingNumber.trim().isEmpty()) {
+            return false;
+        }
+        
+        String cleaned = trackingNumber.trim().toUpperCase();
+        return cleaned.matches("^[A-Z0-9]{6,30}$");
+    }
+    
+    /**
+     * التحقق من صحة اللون بصيغة HEX
+     */
+    public static boolean isValidHexColor(String color) {
+        if (color == null || color.trim().isEmpty()) {
+            return false;
+        }
+        
+        String cleaned = color.trim();
+        return cleaned.matches("^#[0-9A-Fa-f]{6}$");
+    }
+    
+    /**
+     * التحقق من صحة الـ URL
+     */
+    public static boolean isValidUrl(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return false;
+        }
+        
+        try {
+            new java.net.URL(url);
+            return true;
+        } catch (java.net.MalformedURLException e) {
+            return false;
+        }
+    }
+    
+    /**
+     * التحقق من صحة JSON
+     */
+    public static boolean isValidJson(String json) {
+        if (json == null || json.trim().isEmpty()) {
+            return false;
+        }
+        
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = 
+                new com.fasterxml.jackson.databind.ObjectMapper();
+            mapper.readTree(json);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }
-
+    
 
 
 /* ---- File: src/main/java/com/ecommerce/multistore/user/application/dto/CreateUserRequest.java ---- */
@@ -13858,70 +17001,102 @@ spring.application.name=Multi Store Backend
 
 /* ---- File: src/main/resources/application.yml ---- */
 
+# Application Configuration
 spring:
   application:
     name: multi-store-backend
-
+  
+  # Database Configuration
   datasource:
     url: jdbc:postgresql://aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres
     username: postgres.wkwcbdfllvkhotyjkose
-    password: ${DB_PASSWORD:MAES@#2025#}
+    password: MAES@#2025#
     driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      connection-timeout: 30000
   
+  # JPA Configuration
   jpa:
     hibernate:
-      ddl-auto: none
-    show-sql: false
+      ddl-auto: validate
+    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-        jdbc:
-          batch_size: 25
-        order_inserts: true
-        order_updates: true
-
-  # إعدادات Jackson - الحل الأسهل
+  
+  # Jackson Configuration
   jackson:
     serialization:
       write-dates-as-timestamps: false
-      write-date-timestamps-as-nanoseconds: false
     deserialization:
-      read-date-timestamps-as-nanoseconds: false
+      fail-on-unknown-properties: false
     default-property-inclusion: non-null
-    date-format: yyyy-MM-dd HH:mm:ss
-    time-zone: GMT+3
+  
+  # Security Configuration
+  security:
+    user:
+      name: admin
+      password: admin123
+      roles: ADMIN
 
+# Server Configuration
 server:
-  port: ${SERVER_PORT:8080}
+  port: 8080
+  servlet:
+    context-path: /
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
-# إعدادات Swagger/OpenAPI
+# Swagger/OpenAPI Configuration
 springdoc:
   api-docs:
+    enabled: true
     path: /api-docs
-    enabled: true
   swagger-ui:
-    path: /swagger-ui.html
     enabled: true
-    operationsSorter: method
-    tagsSorter: alpha
-    tryItOutEnabled: true
-    filter: true
-    displayRequestDuration: true
-  show-actuator: true
-  group-configs:
-    - group: users
-      paths-to-match: /api/v1/users/**
-      display-name: User Management APIs
+    path: /swagger-ui.html
+    try-it-out-enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    doc-expansion: none
+    default-models-expand-depth: 1
+    default-model-expand-depth: 1
 
+# Logging Configuration
 logging:
   level:
-    com.ecommerce.multistore: INFO
-    org.springframework.security: INFO
+    com.ecommerce.multistore: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# Management/Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Rate Limiting Configuration
+rate-limit:
+  enabled: true
+  requests: 100
+  window-minutes: 1
+  cleanup-interval: 300
+
+# Cache Configuration
+spring.cache:
+  type: simple
+  cache-names: users,brands,categories,products,orders
 
 
 

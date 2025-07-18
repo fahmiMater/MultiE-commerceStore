@@ -19,40 +19,56 @@ configurations {
 }
 
 repositories {
-    mavenLocal()
     mavenCentral()
+    mavenLocal()
 }
 
 dependencies {
+    // ✅ إزالة hibernate-types-60 - لا نحتاجها مع Hibernate 6
+    // implementation 'com.vladmihalcea:hibernate-types-60:2.21.1'
+
     // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    
+
     // Database
     runtimeOnly 'org.postgresql:postgresql'
-    
-    // Jackson - حل المشكلة
+
+    // Jackson - JSON Processing
     implementation 'com.fasterxml.jackson.core:jackson-core'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'com.fasterxml.jackson.core:jackson-annotations'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.fasterxml.jackson.module:jackson-module-parameter-names'
-    
-    // Swagger
+
+    // Swagger/OpenAPI 3
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
-    
-    // Test
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-api:2.2.0'
+
+    // Monitoring & Metrics
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // Additional Utilities
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    implementation 'commons-codec:commons-codec:1.15'
+
+    // JWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
+    // Test Dependencies
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:postgresql'
     testRuntimeOnly 'com.h2database:h2'
-
-    implementation 'org.springframework.boot:spring-boot-starter-cache'
-implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-implementation 'org.springframework.boot:spring-boot-starter-actuator'
-implementation 'io.micrometer:micrometer-registry-prometheus'
 }
 
 tasks.named('test') {
@@ -62,4 +78,25 @@ tasks.named('test') {
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
     options.compilerArgs += ['-parameters']
+}
+
+tasks.register('bootRunDev') {
+    group = 'application'
+    description = 'Run the application with development profile'
+    doLast {
+        bootRun {
+            args = ['--spring.profiles.active=dev']
+        }
+    }
+}
+
+jar {
+    archiveFileName = "${project.name}-${project.version}.jar"
+    manifest {
+        attributes(
+            'Implementation-Title': project.name,
+            'Implementation-Version': project.version,
+            'Main-Class': 'com.ecommerce.multistore.MultiStoreBackendApplication'
+        )
+    }
 }
